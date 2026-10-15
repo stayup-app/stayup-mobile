@@ -389,6 +389,188 @@ export const PROVIDER_LIST = [
       },
     },
   },
+  {
+    name: "reddit",
+    displayName: "Reddit",
+    template: {
+      version: 1,
+      display: {
+        name: "Reddit",
+        icon: {
+          paths: ["M7.9 20A9 9 0 1 0 4 16.1L2 22z"],
+          viewBox: "0 0 24 24",
+          stroke: true,
+        },
+        accent: "#f0937a",
+        sortOrder: 60,
+        feedLabel: {
+          path: "$source.url",
+          format: "urlSlug",
+        },
+      },
+      item: {
+        parseContentAsJson: true,
+        fields: {
+          title: "title",
+          subtitle: "r/{subreddit} · ▲ {score}",
+          summary: "summary",
+          url: "link",
+          timestamp: "$row.datetime",
+        },
+      },
+      list: {
+        layout: "row",
+        primary: "title",
+        secondary: "subtitle",
+        meta: "timestamp",
+        snippet: "summary",
+      },
+      detail: {
+        mode: "text",
+        title: "title",
+        subtitle: "r/{subreddit} · u/{author}",
+        badge: "▲ {score}",
+        body: "summary",
+        openUrl: "link",
+        openLabel: "Open on Reddit",
+      },
+      form: {
+        label: "Subreddit (r/name or URL)",
+        placeholder: "r/programming",
+        urlTemplate: "https://www.reddit.com/r/{value}/",
+        transform: {
+          trim: true,
+          extract: "reddit\\.com/r/([^/?\\s]+)",
+          stripPrefix: ["/r/", "r/"],
+        },
+      },
+    },
+  },
+  {
+    name: "podcast",
+    displayName: "Podcast",
+    template: {
+      version: 1,
+      display: {
+        name: "Podcast",
+        icon: {
+          paths: [
+            "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z",
+            "M19 10v2a7 7 0 0 1-14 0v-2",
+            "M12 19v3",
+          ],
+          viewBox: "0 0 24 24",
+          stroke: true,
+        },
+        accent: "#c5b1e8",
+        sortOrder: 70,
+        feedLabel: [
+          {
+            path: "$source.config.title",
+          },
+          {
+            path: "$source.url",
+            format: "domain",
+          },
+        ],
+      },
+      item: {
+        parseContentAsJson: true,
+        fields: {
+          title: "title",
+          subtitle: "duration",
+          image: "image",
+          summary: "summary",
+          url: "link",
+          timestamp: "$row.datetime",
+        },
+      },
+      list: {
+        layout: "media",
+        primary: "title",
+        secondary: "subtitle",
+        meta: "timestamp",
+        thumbnail: "image",
+      },
+      detail: {
+        mode: "audio",
+        title: "title",
+        subtitle: "duration",
+        image: "image",
+        audioUrl: "audio",
+        body: "summary",
+        openUrl: ["link", "audio"],
+        openLabel: "Open episode",
+      },
+      form: {
+        label: "Podcast RSS feed URL",
+        placeholder: "https://feeds.example.com/show.xml",
+        pattern: "^https?://.+",
+        transform: {
+          trim: true,
+        },
+      },
+    },
+  },
+  {
+    name: "social",
+    displayName: "Social",
+    template: {
+      version: 1,
+      display: {
+        name: "Social",
+        icon: {
+          paths: ["M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z", "M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"],
+          viewBox: "0 0 24 24",
+          stroke: true,
+        },
+        accent: "#8fb8e8",
+        sortOrder: 80,
+        feedLabel: [
+          {
+            path: "$source.config.title",
+          },
+          {
+            path: "$source.url",
+            format: "urlSlug",
+          },
+        ],
+      },
+      item: {
+        parseContentAsJson: true,
+        fields: {
+          title: "text",
+          subtitle: "{author} · {handle}",
+          summary: "text",
+          url: "link",
+          timestamp: "$row.datetime",
+        },
+      },
+      list: {
+        layout: "row",
+        primary: "title",
+        secondary: "subtitle",
+        meta: "timestamp",
+      },
+      detail: {
+        mode: "text",
+        title: "author",
+        subtitle: "handle",
+        badge: "♥ {likes} · ↻ {reposts}",
+        body: "text",
+        openUrl: "link",
+        openLabel: "Open post",
+      },
+      form: {
+        label: "Mastodon or Bluesky URL",
+        placeholder: "https://mastodon.social/@user",
+        pattern: "^https?://.+",
+        transform: {
+          trim: true,
+        },
+      },
+    },
+  },
 ]
 
 export const PROVIDERS = buildTemplateMap(PROVIDER_LIST)
