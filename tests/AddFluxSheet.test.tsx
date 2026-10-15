@@ -46,6 +46,12 @@ async function setup(props: Partial<React.ComponentProps<typeof AddFluxSheet>> =
   return { onClose, onSuccess }
 }
 
+// The sheet opens on "Choisir un flux existant": adding a new one is an explicit tap.
+async function chooseNew() {
+  await waitFor(() => expect(screen.getByText("Ajouter un nouveau")).toBeTruthy())
+  fireEvent.press(screen.getByText("Ajouter un nouveau"))
+}
+
 function firstInput() {
   return screen.UNSAFE_getAllByType(TextInput)[0]
 }
@@ -69,6 +75,7 @@ describe("AddFluxSheet — providers", () => {
 describe("AddFluxSheet — add a new flux", () => {
   it("builds the repository url from the connector form and posts it", async () => {
     const { onSuccess, onClose } = await setup()
+    await chooseNew()
     await waitFor(() => expect(screen.getByText("GitHub repo (owner/repo or URL)")).toBeTruthy())
 
     fireEvent.changeText(firstInput(), "https://github.com/facebook/react.git")
@@ -88,11 +95,13 @@ describe("AddFluxSheet — add a new flux", () => {
   it("shows the connector form label of the selected provider", async () => {
     await setup()
     fireEvent.press(screen.getByText("RSS"))
+    await chooseNew()
     await waitFor(() => expect(screen.getByText("RSS/Atom feed URL")).toBeTruthy())
   })
 
   it("rejects an empty identifier", async () => {
     await setup()
+    await chooseNew()
     await waitFor(() => expect(screen.getByText("Ajouter")).toBeTruthy())
     fireEvent.press(screen.getByText("Ajouter"))
     await waitFor(() => expect(screen.getByText("Ce champ est requis")).toBeTruthy())
@@ -103,6 +112,7 @@ describe("AddFluxSheet — add a new flux", () => {
     mockedAdd.mockResolvedValue({ status: "pending" })
     await setup()
     fireEvent.press(screen.getByText("Scrap"))
+    await chooseNew()
 
     fireEvent.changeText(firstInput(), "https://blog.dev")
     fireEvent.press(screen.getByText("Ajouter"))
@@ -113,11 +123,21 @@ describe("AddFluxSheet — add a new flux", () => {
   it("surfaces the API error", async () => {
     mockedAdd.mockRejectedValue(new Error("StayUp API error 500"))
     await setup()
+    await chooseNew()
 
     fireEvent.changeText(firstInput(), "facebook/react")
     fireEvent.press(screen.getByText("Ajouter"))
 
     await waitFor(() => expect(screen.getByText("StayUp API error 500")).toBeTruthy())
+  })
+})
+
+describe("AddFluxSheet — manual provider hint", () => {
+  it("does not show the request-sent text before the user submits", async () => {
+    await setup()
+    fireEvent.press(screen.getByText("Scrap"))
+    await chooseNew()
+    expect(screen.queryByText(/Votre demande a bien été envoyée/)).toBeNull()
   })
 })
 
@@ -196,14 +216,14 @@ describe("AddFluxSheet — mode toggle & guards", () => {
     ])
     await setup()
     fireEvent.press(screen.getByText("RSS"))
-    await waitFor(() => expect(screen.getByText("RSS/Atom feed URL")).toBeTruthy())
-    fireEvent.press(screen.getByText("Choisir un flux existant"))
+    // Every flux is already followed → the picker is shown, with nothing to pick.
     await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
   })
 
   it("rejects an identifier that does not match the connector pattern", async () => {
     await setup()
     fireEvent.press(screen.getByText("RSS")) // pattern ^https?://.+
+    await chooseNew()
     await waitFor(() => expect(screen.getByText("RSS/Atom feed URL")).toBeTruthy())
     fireEvent.changeText(firstInput(), "not-a-url")
     fireEvent.press(screen.getByText("Ajouter"))
@@ -214,6 +234,7 @@ describe("AddFluxSheet — mode toggle & guards", () => {
   it("falls back to a generic message when a non-Error is thrown", async () => {
     mockedAdd.mockRejectedValue("nope")
     await setup()
+    await chooseNew()
     fireEvent.changeText(firstInput(), "facebook/react")
     fireEvent.press(screen.getByText("Ajouter"))
     await waitFor(() => expect(screen.getByText("Une erreur est survenue.")).toBeTruthy())
@@ -237,6 +258,7 @@ describe("AddFluxSheet — degraded auth & payloads", () => {
   it("tolerates a flux endpoint that resolves nothing", async () => {
     mockedGetFluxes.mockResolvedValue(undefined as never)
     await setup()
+    await chooseNew()
     await waitFor(() => expect(screen.getByText("GitHub repo (owner/repo or URL)")).toBeTruthy())
   })
 
@@ -266,6 +288,7 @@ describe("AddFluxSheet — network failures", () => {
   it("treats a failed flux fetch as an empty list", async () => {
     mockedGetFluxes.mockRejectedValue(new Error("boom"))
     await setup()
+    await chooseNew()
     await waitFor(() => expect(screen.getByText("GitHub repo (owner/repo or URL)")).toBeTruthy())
   })
 })
