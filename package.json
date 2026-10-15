@@ -1,6 +1,6 @@
 {
   "name": "stayup-mobile",
-  "version": "1.15.2",
+  "version": "1.16.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",

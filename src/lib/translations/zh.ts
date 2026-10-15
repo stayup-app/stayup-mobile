@@ -1,34 +1,7 @@
 import type { Translations } from "./en"
 
 export const zh: Translations = {
-  instances: {
-    title: "服务器",
-    subtitle: "一次性关注多个 API 实例的订阅源。",
-    primary: "主",
-    add: "添加服务器",
-    urlLabel: "服务器 URL",
-    urlPlaceholder: "https://your-api.example.com",
-    cancel: "取消",
-    next: "下一步",
-    makePrimary: "设为主服务器",
-    reconnect: "重新连接",
-    remove: "移除",
-    save: "保存",
-    expired: "会话已过期",
-    removePrimaryWarning: "移除主服务器会让你退出所有登录。",
-    unreachable: "无法访问",
-    reconnectPrompt: "以下服务器需要重新登录：",
-    manage: "服务器",
-    urlUnreachable: "无法连接到该服务器。",
-    urlIncompatible: "此网址不是 StayUp API。",
-  },
-  serverStatus: {
-    title: "服务器状态",
-    connected: "已连接",
-    disconnected: "已断开",
-  },
   auth: {
-    accountPending: "账户已创建。管理员批准后才能登录。",
     subtitle: "从你上次离开的地方继续。",
     loginTitle: "欢迎回来。",
     registerTitle: "创建你的账户。",
@@ -49,8 +22,6 @@ export const zh: Translations = {
     continueWithGitHub: "使用GitHub继续",
     continueWithGoogle: "使用Google继续",
     or: "或",
-    server: "服务器",
-    pendingApprovalHint: "登录前，你的账户需要管理员批准。",
   },
   tabs: {
     feed: "订阅",
@@ -120,11 +91,6 @@ export const zh: Translations = {
     language: "语言",
     lightMode: "浅色模式",
     darkMode: "深色模式",
-    apiUrl: "API 地址",
-    apiUrlSave: "保存",
-    apiUrlSaved: "API 地址已更新。",
-    apiUrlReset: "恢复默认",
-    apiUrlInvalid: "请输入有效的网址。",
   },
   // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
   errors: {

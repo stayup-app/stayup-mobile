@@ -19,19 +19,6 @@ export function TemplatedEntry({ template, item, source, color, onPress }: Templ
   const view = resolveItemView(template, item, source)
   const layout = template.list?.layout ?? "row"
   const date = view.timestamp ? formatDate(view.timestamp) : ""
-  const srcName =
-    (typeof item._instance_name === "string" && item._instance_name) ||
-    (typeof item._data_source_name === "string" && item._data_source_name) ||
-    ""
-  const srcBadge = srcName ? (
-    <Text
-      className="rounded px-1.5 py-0.5 text-[11px] font-mono"
-      style={{ color: colors.dim, backgroundColor: colors.surface }}
-      numberOfLines={1}
-    >
-      {srcName}
-    </Text>
-  ) : null
 
   if (layout === "media") {
     return (
@@ -73,7 +60,6 @@ export function TemplatedEntry({ template, item, source, color, onPress }: Templ
                 {date}
               </Text>
             ) : null}
-            {srcBadge}
           </View>
         </View>
       </Pressable>
@@ -97,7 +83,6 @@ export function TemplatedEntry({ template, item, source, color, onPress }: Templ
             {date}
           </Text>
         ) : null}
-        {srcBadge}
       </View>
       {view.subtitle ? (
         <Text className="mb-1 text-sm font-mono" style={{ color }} numberOfLines={1}>

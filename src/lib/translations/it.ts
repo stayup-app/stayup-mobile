@@ -1,35 +1,7 @@
 import type { Translations } from "./en"
 
 export const it: Translations = {
-  instances: {
-    title: "Server",
-    subtitle: "Segui i flussi di più istanze API contemporaneamente.",
-    primary: "Primario",
-    add: "Aggiungi un server",
-    urlLabel: "URL del server",
-    urlPlaceholder: "https://la-tua-api.example.com",
-    cancel: "Annulla",
-    next: "Avanti",
-    makePrimary: "Rendi primario",
-    reconnect: "Riconnetti",
-    remove: "Rimuovi",
-    save: "Salva",
-    expired: "Sessione scaduta",
-    removePrimaryWarning: "Rimuovere il server primario ti disconnette da tutto.",
-    unreachable: "Irraggiungibile",
-    reconnectPrompt: "Questi server richiedono di accedere di nuovo:",
-    manage: "Server",
-    urlUnreachable: "Server irraggiungibile.",
-    urlIncompatible: "Questo URL non è un'API StayUp.",
-  },
-  serverStatus: {
-    title: "Stato dei server",
-    connected: "Connesso",
-    disconnected: "Disconnesso",
-  },
   auth: {
-    accountPending:
-      "Account creato. Un amministratore deve approvarlo prima che tu possa accedere.",
     subtitle: "Riprendi la lettura da dove l'avevi lasciata.",
     loginTitle: "Bentornato.",
     registerTitle: "Crea il tuo account.",
@@ -50,9 +22,6 @@ export const it: Translations = {
     continueWithGitHub: "Continua con GitHub",
     continueWithGoogle: "Continua con Google",
     or: "o",
-    server: "Server",
-    pendingApprovalHint:
-      "Il tuo account dovrà essere approvato da un amministratore prima che tu possa accedere.",
   },
   tabs: {
     feed: "Feed",
@@ -123,11 +92,6 @@ export const it: Translations = {
     language: "Lingua",
     lightMode: "Modalità chiara",
     darkMode: "Modalità scura",
-    apiUrl: "URL API",
-    apiUrlSave: "Salva",
-    apiUrlSaved: "URL API aggiornata.",
-    apiUrlReset: "Ripristina predefinita",
-    apiUrlInvalid: "Inserisci un URL valido.",
   },
   // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
   errors: {

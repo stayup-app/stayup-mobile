@@ -1,35 +1,7 @@
 import type { Translations } from "./en"
 
 export const es: Translations = {
-  instances: {
-    title: "Servidores",
-    subtitle: "Sigue los feeds de varias instancias de API a la vez.",
-    primary: "Principal",
-    add: "Añadir un servidor",
-    urlLabel: "URL del servidor",
-    urlPlaceholder: "https://tu-api.example.com",
-    cancel: "Cancelar",
-    next: "Siguiente",
-    makePrimary: "Hacer principal",
-    reconnect: "Reconectar",
-    remove: "Quitar",
-    save: "Guardar",
-    expired: "Sesión caducada",
-    removePrimaryWarning: "Quitar tu servidor principal te cierra la sesión en todo.",
-    unreachable: "Inaccesible",
-    reconnectPrompt: "Estos servidores requieren que vuelvas a iniciar sesión:",
-    manage: "Servidores",
-    urlUnreachable: "No se puede conectar con ese servidor.",
-    urlIncompatible: "Esta URL no es una API de StayUp.",
-  },
-  serverStatus: {
-    title: "Estado de los servidores",
-    connected: "Conectado",
-    disconnected: "Desconectado",
-  },
   auth: {
-    accountPending:
-      "Cuenta creada. Un administrador debe aprobarla antes de que puedas iniciar sesión.",
     subtitle: "Retoma la lectura justo donde la dejaste.",
     loginTitle: "Qué bueno verte de nuevo.",
     registerTitle: "Crea tu cuenta.",
@@ -50,9 +22,6 @@ export const es: Translations = {
     continueWithGitHub: "Continuar con GitHub",
     continueWithGoogle: "Continuar con Google",
     or: "o",
-    server: "Servidor",
-    pendingApprovalHint:
-      "Un administrador deberá aprobar tu cuenta antes de que puedas iniciar sesión.",
   },
   tabs: {
     feed: "Feed",
@@ -122,11 +91,6 @@ export const es: Translations = {
     language: "Idioma",
     lightMode: "Modo claro",
     darkMode: "Modo oscuro",
-    apiUrl: "URL de la API",
-    apiUrlSave: "Guardar",
-    apiUrlSaved: "URL de la API actualizada.",
-    apiUrlReset: "Restablecer por defecto",
-    apiUrlInvalid: "Introduce una URL válida.",
   },
   // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
   errors: {

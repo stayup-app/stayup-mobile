@@ -1,21 +1,18 @@
-import { useState } from "react"
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Pressable } from "react-native"
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from "react-native"
 import { Link } from "expo-router"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useAuth } from "@/hooks/useAuth"
 import { useAuthConfig } from "@/hooks/useAuthConfig"
 import { LoginForm } from "@/components/auth/LoginForm"
 import { OAuthButtons } from "@/components/auth/OAuthButtons"
-import { ServerField } from "@/components/auth/ServerField"
 import { AuroraMark } from "@/components/ui/AuroraMark"
 import { useLanguage } from "@/context/LanguageContext"
 import { colors } from "@/theme"
 
 export default function LoginScreen() {
   const { login, loginOAuth, loading, error } = useAuth()
-  const { config, apiHost, refresh } = useAuthConfig()
+  const { config } = useAuthConfig()
   const { t } = useLanguage()
-  const [showServer, setShowServer] = useState(false)
 
   // Une API trop ancienne pour /auth/config → on propose tout, comme avant.
   const oauth = config?.oauth ?? { github: true, google: true }
@@ -71,20 +68,6 @@ export default function LoginScreen() {
                 {t.auth.signUp}
               </Text>
             </Link>
-          </View>
-
-          {/* Serveur : réglable avant même de se connecter. */}
-          <View className="mt-8 items-center">
-            <Pressable onPress={() => setShowServer((v) => !v)}>
-              <Text className="text-[12px]" style={{ color: colors.muted }}>
-                {t.auth.server} · {apiHost || "…"}
-              </Text>
-            </Pressable>
-            {showServer && (
-              <View className="mt-3 w-full">
-                <ServerField onChanged={refresh} />
-              </View>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

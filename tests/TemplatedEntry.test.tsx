@@ -66,13 +66,6 @@ describe("row layout", () => {
     renderEntry(rowTpl, {})
     expect(screen.getByText("—")).toBeTruthy()
   })
-
-  it("tags the row with its data source name when the line comes from a secondary base", () => {
-    renderEntry(rowTpl, { title: "Hello", ts: "2024-06-15T14:30:00Z" }, undefined, {
-      _data_source_name: "Team feeds",
-    })
-    expect(screen.getByText("Team feeds")).toBeTruthy()
-  })
 })
 
 describe("media layout", () => {
@@ -90,16 +83,6 @@ describe("media layout", () => {
   it("shows the placeholder glyph when there is no image and no date", () => {
     renderEntry(mediaTpl, { title: "Clip" })
     expect(screen.getByText("▶")).toBeTruthy()
-  })
-
-  it("tags a media entry with its data source name", () => {
-    renderEntry(
-      mediaTpl,
-      { title: "Clip", img: "https://img.test/t.jpg", ts: "2024-06-15T14:30:00Z" },
-      undefined,
-      { _data_source_name: "Partner CDN" },
-    )
-    expect(screen.getByText("Partner CDN")).toBeTruthy()
   })
 })
 

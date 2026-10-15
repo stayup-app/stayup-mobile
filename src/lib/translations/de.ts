@@ -1,35 +1,7 @@
 import type { Translations } from "./en"
 
 export const de: Translations = {
-  instances: {
-    title: "Server",
-    subtitle: "Folge Feeds von mehreren API-Instanzen gleichzeitig.",
-    primary: "Primär",
-    add: "Server hinzufügen",
-    urlLabel: "Server-URL",
-    urlPlaceholder: "https://deine-api.example.com",
-    cancel: "Abbrechen",
-    next: "Weiter",
-    makePrimary: "Als primär festlegen",
-    reconnect: "Neu verbinden",
-    remove: "Entfernen",
-    save: "Speichern",
-    expired: "Sitzung abgelaufen",
-    removePrimaryWarning: "Den primären Server zu entfernen meldet dich überall ab.",
-    unreachable: "Nicht erreichbar",
-    reconnectPrompt: "Bei diesen Servern musst du dich neu anmelden:",
-    manage: "Server",
-    urlUnreachable: "Server nicht erreichbar.",
-    urlIncompatible: "Diese URL ist keine StayUp-API.",
-  },
-  serverStatus: {
-    title: "Serverstatus",
-    connected: "Verbunden",
-    disconnected: "Getrennt",
-  },
   auth: {
-    accountPending:
-      "Konto erstellt. Ein Administrator muss es freigeben, bevor du dich anmelden kannst.",
     subtitle: "Mach da weiter, wo du aufgehört hast.",
     loginTitle: "Schön, dich wiederzusehen.",
     registerTitle: "Erstelle dein Konto.",
@@ -50,9 +22,6 @@ export const de: Translations = {
     continueWithGitHub: "Mit GitHub fortfahren",
     continueWithGoogle: "Mit Google fortfahren",
     or: "oder",
-    server: "Server",
-    pendingApprovalHint:
-      "Dein Konto muss von einem Administrator freigegeben werden, bevor du dich anmelden kannst.",
   },
   tabs: {
     feed: "Feed",
@@ -123,11 +92,6 @@ export const de: Translations = {
     language: "Sprache",
     lightMode: "Heller Modus",
     darkMode: "Dunkler Modus",
-    apiUrl: "API-URL",
-    apiUrlSave: "Speichern",
-    apiUrlSaved: "API-URL aktualisiert.",
-    apiUrlReset: "Auf Standard zurücksetzen",
-    apiUrlInvalid: "Gib eine gültige URL ein.",
   },
   // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
   errors: {

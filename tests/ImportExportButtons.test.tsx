@@ -39,8 +39,6 @@ const mockedGetDocument = DocumentPicker.getDocumentAsync as jest.Mock
 const mockedIsAvailable = Sharing.isAvailableAsync as jest.Mock
 const mockedShare = Sharing.shareAsync as jest.Mock
 
-const API_URL = "https://stayup-api.r-sik.workers.dev"
-
 function flux(overrides: Partial<FeedFlux> = {}): FeedFlux {
   return {
     id: "l1",
@@ -48,8 +46,6 @@ function flux(overrides: Partial<FeedFlux> = {}): FeedFlux {
     provider: "changelog",
     url: "https://github.com/facebook/react/",
     identifier: "facebook/react",
-    instanceId: "i1",
-    instanceName: "Primary",
     ...overrides,
   }
 }
@@ -121,7 +117,7 @@ describe("import", () => {
     fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
 
     await waitFor(() => expect(mockedAdd).toHaveBeenCalled())
-    expect(mockedAdd).toHaveBeenCalledWith("user-1", "token-1", API_URL, {
+    expect(mockedAdd).toHaveBeenCalledWith("user-1", "token-1", {
       provider: "rss",
       url: "https://blog.example.com/feed.xml",
       config: { max_scraps: 5, retention_days: 15 },
@@ -219,9 +215,7 @@ describe("import", () => {
 
     fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
 
-    await waitFor(() =>
-      expect(mockedSubscribe).toHaveBeenCalledWith("scrap", 7, "token-1", API_URL),
-    )
+    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("scrap", 7, "token-1"))
     expect(alertSpy).toHaveBeenCalledWith("Importer des flux", "1 ajouté(s)")
   })
 

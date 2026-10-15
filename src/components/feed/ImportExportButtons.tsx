@@ -7,7 +7,7 @@ import * as Sharing from "expo-sharing"
 import { File, Paths } from "expo-file-system"
 import { buildOpml, parseOpml, type OpmlFlux } from "@/lib/opml"
 import { addUserRepository, getProviderFluxes, subscribeFlux } from "@/lib/api"
-import { readToken, readApiUrl } from "@/lib/store"
+import { readToken } from "@/lib/store"
 import { useLanguage } from "@/context/LanguageContext"
 import type { FeedFlux } from "@/hooks/useFeed"
 import type { Translations } from "@/lib/translations"
@@ -54,10 +54,9 @@ export function ImportExportButtons({ fluxes, userId, onImported }: ImportExport
     provider: string,
     url: string,
     token: string,
-    apiUrl: string,
   ): Promise<number | null> {
     try {
-      const fluxes = await getProviderFluxes(provider, token, apiUrl)
+      const fluxes = await getProviderFluxes(provider, token)
       return fluxes.find((f) => f.url === url)?.id ?? null
     } catch {
       return null
@@ -67,17 +66,16 @@ export function ImportExportButtons({ fluxes, userId, onImported }: ImportExport
   async function importEntry(
     entry: OpmlFlux,
     token: string,
-    apiUrl: string,
   ): Promise<"added" | "unavailable" | "failed"> {
     try {
       if (entry.provider === "scrap") {
-        const id = await resolveFluxId("scrap", entry.url, token, apiUrl)
+        const id = await resolveFluxId("scrap", entry.url, token)
         if (id === null) return "unavailable"
-        await subscribeFlux("scrap", id, token, apiUrl)
+        await subscribeFlux("scrap", id, token)
         return "added"
       }
 
-      await addUserRepository(userId, token, apiUrl, {
+      await addUserRepository(userId, token, {
         provider: entry.provider,
         url: entry.url,
         config: { max_scraps: 5, retention_days: 15 },
@@ -103,7 +101,7 @@ export function ImportExportButtons({ fluxes, userId, onImported }: ImportExport
     }
 
     setImporting(true)
-    const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
+    const token = await readToken()
     const existing = new Set(fluxes.map((f) => `${f.provider}:${f.url}`))
     let added = 0
     let skipped = 0
@@ -115,7 +113,7 @@ export function ImportExportButtons({ fluxes, userId, onImported }: ImportExport
           skipped++
           continue
         }
-        const outcome = await importEntry(entry, token, apiUrl)
+        const outcome = await importEntry(entry, token)
         if (outcome === "added") added++
         else if (outcome === "unavailable") unavailable++
       }

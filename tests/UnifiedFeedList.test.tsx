@@ -157,7 +157,7 @@ describe("UnifiedFeedList — rendu par template", () => {
   it("dims a read row unless it is the open one", () => {
     const { toJSON } = list({
       items: [changelog()],
-      readIds: new Set([":changelog:1"]),
+      readIds: new Set(["changelog:1"]),
     })
     expect(JSON.stringify(toJSON())).toContain('"opacity":0.45')
   })

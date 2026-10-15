@@ -12,7 +12,7 @@ import ProfileScreen from "../app/(app)/profile/index"
 import FluxDetailScreen from "../app/(app)/feed/flux/[id]"
 import { loginWithPassword, registerWithPassword, fetchAuthConfig } from "@/lib/api"
 import { renderWithProviders } from "./render"
-import { mockRedirect, redirectedTo, setMockParams } from "./setup"
+import { mockRedirect, mockRouter, redirectedTo, setMockParams } from "./setup"
 
 jest.mock("@/lib/api", () => ({
   loginWithPassword: jest.fn(),
@@ -112,15 +112,7 @@ describe("Layouts", () => {
     expect(screen.queryByTestId("icon-BookOpen")).toBeNull()
   })
 
-  it("AppLayout shows no status alert on the profile tab when every server is live", async () => {
-    secureStore.getItemAsync.mockResolvedValue(validToken())
-    renderWithProviders(<AppLayout />)
-
-    await waitFor(() => expect(screen.getByTestId("icon-User")).toBeTruthy())
-    expect(screen.queryByTestId("server-status-alert")).toBeNull()
-  })
-
-  it("AppLayout flags the profile tab when a server session is expired", async () => {
+  it("AppLayout redirects to login when the stored session has expired", async () => {
     const expiredToken = () =>
       `${btoa("{}")}.${btoa(
         JSON.stringify({ sub: "user-1", role: "user", exp: Math.floor(Date.now() / 1000) - 10 }),
@@ -128,7 +120,8 @@ describe("Layouts", () => {
     secureStore.getItemAsync.mockResolvedValue(expiredToken())
     renderWithProviders(<AppLayout />)
 
-    await waitFor(() => expect(screen.getByTestId("server-status-alert")).toBeTruthy())
+    await waitFor(() => expect(mockRedirect).toHaveBeenCalled())
+    expect(redirectedTo()).toBe("/(auth)/login")
   })
 })
 
@@ -152,13 +145,7 @@ describe("LoginScreen", () => {
     fireEvent.changeText(fields[1], "password")
     fireEvent.press(screen.getByText("Se connecter"))
 
-    await waitFor(() =>
-      expect(mockedLogin).toHaveBeenCalledWith(
-        "jean@example.com",
-        "password",
-        "https://stayup-api.r-sik.workers.dev",
-      ),
-    )
+    await waitFor(() => expect(mockedLogin).toHaveBeenCalledWith("jean@example.com", "password"))
   })
 
   it("offers both OAuth providers", async () => {
@@ -184,15 +171,6 @@ describe("LoginScreen", () => {
     expect(screen.queryByText("ou")).toBeNull()
     expect(screen.queryByText("Continuer avec GitHub")).toBeNull()
   })
-
-  it("reveals the server field behind the host line", async () => {
-    renderWithProviders(<LoginScreen />)
-
-    const toggle = await screen.findByText(/Serveur ·/)
-    expect(screen.queryByText("URL de l'API")).toBeNull()
-    fireEvent.press(toggle)
-    expect(screen.getByText("URL de l'API")).toBeTruthy()
-  })
 })
 
 describe("RegisterScreen", () => {
@@ -203,21 +181,8 @@ describe("RegisterScreen", () => {
     expect(screen.getByText("Déjà un compte ?")).toBeTruthy()
   })
 
-  it("warns about admin approval when the instance requires it", async () => {
-    mockedAuthConfig.mockResolvedValue(authConfig({ registrationMode: "approval" }))
-    renderWithProviders(<RegisterScreen />)
-
-    await waitFor(() =>
-      expect(
-        screen.getByText(
-          "Ton compte devra être validé par un administrateur avant que tu puisses te connecter.",
-        ),
-      ).toBeTruthy(),
-    )
-  })
-
   it("registers through the form", async () => {
-    mockedRegister.mockResolvedValue({ token: validToken() })
+    mockedRegister.mockResolvedValue(validToken())
     renderWithProviders(<RegisterScreen />)
     await waitFor(() => expect(screen.getByText("Créer un compte")).toBeTruthy())
 
@@ -228,12 +193,7 @@ describe("RegisterScreen", () => {
     fireEvent.press(screen.getByText("Créer un compte"))
 
     await waitFor(() =>
-      expect(mockedRegister).toHaveBeenCalledWith(
-        "Jean",
-        "jean@example.com",
-        "password123",
-        "https://stayup-api.r-sik.workers.dev",
-      ),
+      expect(mockedRegister).toHaveBeenCalledWith("Jean", "jean@example.com", "password123"),
     )
   })
 })
@@ -263,52 +223,6 @@ describe("ProfileScreen", () => {
     expect(screen.getByText("🇫🇷 Français")).toBeTruthy()
   })
 
-  it("opens the servers sheet from the profile", async () => {
-    secureStore.getItemAsync.mockResolvedValue(validToken())
-    renderWithProviders(<ProfileScreen />)
-
-    const row = await screen.findByText("Serveurs")
-    fireEvent.press(row)
-
-    // The sheet's subtitle appears once it is open.
-    await waitFor(() =>
-      expect(
-        screen.getByText("Suis les flux de plusieurs instances d'API à la fois."),
-      ).toBeTruthy(),
-    )
-  })
-
-  it("closes the servers sheet again", async () => {
-    secureStore.getItemAsync.mockResolvedValue(validToken())
-    renderWithProviders(<ProfileScreen />)
-
-    fireEvent.press(await screen.findByText("Serveurs"))
-    const subtitle = "Suis les flux de plusieurs instances d'API à la fois."
-    await waitFor(() => expect(screen.getByText(subtitle)).toBeTruthy())
-
-    fireEvent.press(screen.getByTestId("icon-X"))
-    await waitFor(() => expect(screen.queryByText(subtitle)).toBeNull())
-  })
-
-  it("badges the servers row with the count when more than one is connected", async () => {
-    asyncStorage.getItem.mockImplementation((k: string) =>
-      Promise.resolve(
-        k === "instances"
-          ? JSON.stringify([
-              { id: "i1", url: "https://a.dev", name: "A" },
-              { id: "i2", url: "https://b.dev", name: "B" },
-            ])
-          : null,
-      ),
-    )
-    secureStore.getItemAsync.mockResolvedValue(validToken())
-    renderWithProviders(<ProfileScreen />)
-
-    const row = await screen.findByText("Serveurs")
-    expect(row.parent?.parent).toBeTruthy()
-    await waitFor(() => expect(screen.getByText("2")).toBeTruthy())
-  })
-
   it("signs the user out", async () => {
     secureStore.getItemAsync.mockResolvedValue(validToken())
     renderWithProviders(<ProfileScreen />)
@@ -317,6 +231,7 @@ describe("ProfileScreen", () => {
     fireEvent.press(screen.getByText("Déconnexion"))
 
     await waitFor(() => expect(secureStore.deleteItemAsync).toHaveBeenCalledWith("auth_token"))
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login"))
   })
 })
 

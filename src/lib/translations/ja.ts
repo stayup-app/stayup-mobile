@@ -1,34 +1,7 @@
 import type { Translations } from "./en"
 
 export const ja: Translations = {
-  instances: {
-    title: "サーバー",
-    subtitle: "複数の API インスタンスのフィードをまとめて購読します。",
-    primary: "プライマリー",
-    add: "サーバーを追加",
-    urlLabel: "サーバー URL",
-    urlPlaceholder: "https://your-api.example.com",
-    cancel: "キャンセル",
-    next: "次へ",
-    makePrimary: "プライマリーにする",
-    reconnect: "再接続",
-    remove: "削除",
-    save: "保存",
-    expired: "セッションの期限切れ",
-    removePrimaryWarning: "プライマリーサーバーを削除すると、すべてからサインアウトします。",
-    unreachable: "到達不能",
-    reconnectPrompt: "次のサーバーへの再ログインが必要です：",
-    manage: "サーバー",
-    urlUnreachable: "そのサーバーに接続できません。",
-    urlIncompatible: "この URL は StayUp API ではありません。",
-  },
-  serverStatus: {
-    title: "サーバーの状態",
-    connected: "接続済み",
-    disconnected: "切断",
-  },
   auth: {
-    accountPending: "アカウントを作成しました。ログインするには管理者の承認が必要です。",
     subtitle: "前回の続きから始めよう。",
     loginTitle: "おかえりなさい。",
     registerTitle: "アカウントを作成しよう。",
@@ -49,8 +22,6 @@ export const ja: Translations = {
     continueWithGitHub: "GitHubで続ける",
     continueWithGoogle: "Googleで続ける",
     or: "または",
-    server: "サーバー",
-    pendingApprovalHint: "サインインする前に、管理者による承認が必要です。",
   },
   tabs: {
     feed: "フィード",
@@ -120,11 +91,6 @@ export const ja: Translations = {
     language: "言語",
     lightMode: "ライトモード",
     darkMode: "ダークモード",
-    apiUrl: "API URL",
-    apiUrlSave: "保存",
-    apiUrlSaved: "API URLを更新しました。",
-    apiUrlReset: "初期設定に戻す",
-    apiUrlInvalid: "有効なURLを入力してください。",
   },
   // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
   errors: {

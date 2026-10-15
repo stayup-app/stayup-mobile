@@ -7,12 +7,11 @@ import {
   getProviderFluxes,
   subscribeFlux,
 } from "@/lib/api"
-import type { Instance } from "@/lib/store"
 import { decodeToken } from "@/lib/session"
+import { PROVIDERS } from "@/lib/providers"
 import { useLanguage } from "@/context/LanguageContext"
 import { colors, getProviderMeta } from "@/theme"
 import {
-  normalizeTemplate,
   buildFluxUrl,
   matchesFormPattern,
   resolveFeedLabel,
@@ -30,18 +29,15 @@ interface ProviderTile {
 interface AddFluxSheetProps {
   visible: boolean
   onClose: () => void
-  instances: Instance[]
+  token: string
   onSuccess: () => void
 }
 
-export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFluxSheetProps) {
+export function AddFluxSheet({ visible, onClose, token, onSuccess }: AddFluxSheetProps) {
   const { t } = useLanguage()
-  const [instanceId, setInstanceId] = useState(instances[0]?.id ?? "")
-  const active = instances.find((i) => i.id === instanceId) ?? instances[0]
   const [provider, setProvider] = useState<string>("changelog")
   const [identifier, setIdentifier] = useState("")
   const [pickMode, setPickMode] = useState<"existing" | "new">("existing")
-  // The whole flux (not just the id): the same id can exist in several databases.
   const [selectedFlux, setSelectedFlux] = useState<ProviderFlux | null>(null)
   const [fluxes, setFluxes] = useState<ProviderFlux[] | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -51,14 +47,14 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
   const [tpls, setTpls] = useState<Record<string, ProviderTemplate | null>>({})
   const [approvals, setApprovals] = useState<Record<string, "auto" | "manual">>({})
 
-  // Provider list: comes from the API, no name hardcoded here.
+  // Provider list: names and approval mode come from the API.
   useEffect(() => {
-    if (!visible || !active) return
+    if (!visible) return
     let cancelled = false
-    getConnectorProviders(active.token, active.url)
+    getConnectorProviders(token)
       .then((providers) => {
         if (cancelled) return
-        const parsed = providers.map((p) => ({ ...p, tpl: normalizeTemplate(p.template) }))
+        const parsed = providers.map((p) => ({ ...p, tpl: PROVIDERS[p.name]?.template ?? null }))
         setTpls(Object.fromEntries(parsed.map((p) => [p.name, p.tpl])))
         setApprovals(Object.fromEntries(parsed.map((p) => [p.name, p.fluxApproval ?? "auto"])))
         setTiles(
@@ -83,13 +79,13 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
     return () => {
       cancelled = true
     }
-  }, [visible, active])
+  }, [visible, token])
 
-  // Existing fluxes of the selected provider, on the chosen instance.
+  // Existing fluxes of the selected provider.
   useEffect(() => {
-    if (!visible || !active) return
+    if (!visible) return
     let cancelled = false
-    getProviderFluxes(provider, active.token, active.url)
+    getProviderFluxes(provider, token)
       .then((list) => {
         if (cancelled) return
         setFluxes(list ?? [])
@@ -104,10 +100,9 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
     return () => {
       cancelled = true
     }
-  }, [visible, provider, active])
+  }, [visible, provider, token])
 
   function handleClose() {
-    setInstanceId(instances[0]?.id ?? "")
     setProvider("changelog")
     setIdentifier("")
     setSelectedFlux(null)
@@ -130,14 +125,7 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
       }
       setSubmitting(true)
       try {
-        if (!active) throw new Error("Token manquant")
-        await subscribeFlux(
-          provider,
-          selectedFlux.id,
-          active.token,
-          active.url,
-          selectedFlux.dataSourceId ?? undefined,
-        )
+        await subscribeFlux(provider, selectedFlux.id, token)
         onSuccess()
         handleClose()
       } catch (err) {
@@ -159,11 +147,10 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
 
     setSubmitting(true)
     try {
-      if (!active) throw new Error("Token manquant")
-      const targetUserId = decodeToken(active.token).userId
+      const targetUserId = decodeToken(token).userId
 
       const url = currentForm ? buildFluxUrl(currentForm, identifier) : identifier
-      const result = await addUserRepository(targetUserId, active.token, active.url, {
+      const result = await addUserRepository(targetUserId, token, {
         provider,
         url,
         config: { max_scraps: 5, retention_days: 15 },
@@ -241,41 +228,6 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
               </View>
             ) : (
               <>
-                {instances.length > 1 && (
-                  <View className="gap-1.5">
-                    <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
-                      {t.instances.title}
-                    </Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {instances.map((inst) => {
-                        const on = inst.id === instanceId
-                        return (
-                          <Pressable
-                            key={inst.id}
-                            onPress={() => {
-                              setInstanceId(inst.id)
-                              setSelectedFlux(null)
-                              setFluxes(null)
-                              setError(null)
-                            }}
-                            className="rounded-xl border px-3 py-2"
-                            style={{
-                              backgroundColor: on ? colors.peachDim : colors.bg,
-                              borderColor: on ? colors.peach : colors.border,
-                            }}
-                          >
-                            <Text
-                              className="text-[13px] font-medium"
-                              style={{ color: on ? colors.peach : colors.fgSoft }}
-                            >
-                              {inst.name}
-                            </Text>
-                          </Pressable>
-                        )
-                      })}
-                    </View>
-                  </View>
-                )}
                 {/* Provider selector — 2x2 grid */}
                 <View className="gap-1.5">
                   <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
@@ -358,11 +310,10 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
                       </Text>
                     ) : (
                       availableFluxes.map((f) => {
-                        const active =
-                          selectedFlux?.id === f.id && selectedFlux?.dataSourceId === f.dataSourceId
+                        const active = selectedFlux?.id === f.id
                         return (
                           <Pressable
-                            key={`${f.dataSourceId ?? "local"}:${f.id}`}
+                            key={f.id}
                             onPress={() => setSelectedFlux(f)}
                             className="rounded-xl border p-3"
                             style={{
@@ -377,15 +328,6 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
                             >
                               {fluxLabel(f)}
                             </Text>
-                            {f.dataSourceName ? (
-                              <Text
-                                className="mt-1 text-[11px]"
-                                style={{ color: colors.dim }}
-                                numberOfLines={1}
-                              >
-                                {f.dataSourceName}
-                              </Text>
-                            ) : null}
                           </Pressable>
                         )
                       })

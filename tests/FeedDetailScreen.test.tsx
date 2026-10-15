@@ -97,7 +97,6 @@ function rssTagged(content: unknown): TaggedItem {
       datetime: "2026-01-01T10:00:00Z",
       executed_at: "2026-01-01T11:00:00Z",
       success: true,
-      _instance_id: "i1",
     },
   }
 }
@@ -152,7 +151,7 @@ describe("FeedDetailScreen — cadre", () => {
     select(rssTagged({ title: "A" }))
     renderWithProviders(<FeedDetailScreen />)
     await waitFor(() =>
-      expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["i1:rss:3"])),
+      expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["rss:3"])),
     )
   })
 

@@ -6,13 +6,8 @@ import { View, ActivityIndicator } from "react-native"
 import { colors } from "@/theme"
 
 export default function AppLayout() {
-  const { session, sessions, loading } = useAuth()
+  const { session, loading } = useAuth()
   const { t } = useLanguage()
-
-  // Au moins un serveur suivi a une session morte → pastille rouge sur l'onglet
-  // Profil (le seul endroit « à côté du profil » sur mobile). Le détail par
-  // serveur et la reconnexion sont dans Profil › Serveurs.
-  const anyServerDead = sessions.some((s) => s.expired)
 
   if (loading) {
     return (
@@ -50,28 +45,7 @@ export default function AppLayout() {
         name="profile/index"
         options={{
           title: t.tabs.profile,
-          tabBarIcon: ({ color, size }) => (
-            <View>
-              <User color={color} size={size} />
-              {anyServerDead && (
-                <View
-                  testID="server-status-alert"
-                  accessibilityLabel={t.serverStatus.disconnected}
-                  style={{
-                    position: "absolute",
-                    top: -2,
-                    right: -3,
-                    width: 9,
-                    height: 9,
-                    borderRadius: 9999,
-                    backgroundColor: colors.rose,
-                    borderWidth: 1.5,
-                    borderColor: colors.bgSoft,
-                  }}
-                />
-              )}
-            </View>
-          ),
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
       <Tabs.Screen name="feed/flux/[id]" options={{ href: null }} />

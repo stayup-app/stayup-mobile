@@ -16,7 +16,6 @@ function rssItem(id: number): TaggedItem {
       datetime: null,
       executed_at: "2026-01-01T00:00:00Z",
       success: true,
-      _instance_id: "i1",
     },
   }
 }
@@ -30,27 +29,17 @@ beforeEach(() => {
 })
 
 describe("getTaggedItemId", () => {
-  it("combines instance, provider and item id", () => {
-    expect(getTaggedItemId(rssItem(7))).toBe("i1:rss:7")
-  })
-
-  it("keeps ids from different instances distinct", () => {
-    const a = { provider: "rss", item: { id: 1, repository_id: 1, _instance_id: "a" } }
-    const b = { provider: "rss", item: { id: 1, repository_id: 1, _instance_id: "b" } }
-    expect(getTaggedItemId(a as never)).not.toBe(getTaggedItemId(b as never))
-  })
-
-  it("uses an empty instance segment when the row carries no tag", () => {
-    expect(getTaggedItemId({ provider: "rss", item: { id: 2 } } as never)).toBe(":rss:2")
+  it("combines provider and item id", () => {
+    expect(getTaggedItemId(rssItem(7))).toBe("rss:7")
   })
 })
 
 describe("useReadItemsStore", () => {
   it("init loads stored ids once", async () => {
-    asyncStorage.getItem.mockResolvedValue(JSON.stringify(["i1:rss:1"]))
+    asyncStorage.getItem.mockResolvedValue(JSON.stringify(["rss:1"]))
     await useReadItemsStore.getState().init()
 
-    expect(useReadItemsStore.getState().readIds).toEqual(new Set(["i1:rss:1"]))
+    expect(useReadItemsStore.getState().readIds).toEqual(new Set(["rss:1"]))
     expect(useReadItemsStore.getState().initialized).toBe(true)
   })
 
@@ -60,27 +49,21 @@ describe("useReadItemsStore", () => {
     expect(asyncStorage.getItem).not.toHaveBeenCalled()
   })
 
-  it("init migrates pre-multi-instance keys onto the primary", async () => {
+  it("init drops the instance segment of keys stored by multi-server versions", async () => {
     asyncStorage.getItem.mockResolvedValue(JSON.stringify(["rss:1", "x:rss:9"]))
-    await useReadItemsStore.getState().init("prim")
-    expect([...useReadItemsStore.getState().readIds]).toEqual(["prim:rss:1", "x:rss:9"])
-  })
-
-  it("init leaves keys untouched with no primary id", async () => {
-    asyncStorage.getItem.mockResolvedValue(JSON.stringify(["rss:1"]))
     await useReadItemsStore.getState().init()
-    expect([...useReadItemsStore.getState().readIds]).toEqual(["rss:1"])
+    expect([...useReadItemsStore.getState().readIds]).toEqual(["rss:1", "rss:9"])
   })
 
   it("markRead adds the id and persists it", async () => {
     await useReadItemsStore.getState().markRead(rssItem(1))
 
-    expect(useReadItemsStore.getState().readIds.has("i1:rss:1")).toBe(true)
-    expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["i1:rss:1"]))
+    expect(useReadItemsStore.getState().readIds.has("rss:1")).toBe(true)
+    expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["rss:1"]))
   })
 
   it("markRead does not persist an already-read item", async () => {
-    useReadItemsStore.setState({ readIds: new Set(["i1:rss:1"]) })
+    useReadItemsStore.setState({ readIds: new Set(["rss:1"]) })
     await useReadItemsStore.getState().markRead(rssItem(1))
     expect(asyncStorage.setItem).not.toHaveBeenCalled()
   })
@@ -88,27 +71,27 @@ describe("useReadItemsStore", () => {
   it("markAllRead adds every missing id", async () => {
     await useReadItemsStore.getState().markAllRead([rssItem(1), rssItem(2)])
 
-    expect(useReadItemsStore.getState().readIds).toEqual(new Set(["i1:rss:1", "i1:rss:2"]))
+    expect(useReadItemsStore.getState().readIds).toEqual(new Set(["rss:1", "rss:2"]))
     expect(asyncStorage.setItem).toHaveBeenCalledTimes(1)
   })
 
   it("markAllRead is a no-op when nothing is new", async () => {
-    useReadItemsStore.setState({ readIds: new Set(["i1:rss:1"]) })
+    useReadItemsStore.setState({ readIds: new Set(["rss:1"]) })
     await useReadItemsStore.getState().markAllRead([rssItem(1)])
     expect(asyncStorage.setItem).not.toHaveBeenCalled()
   })
 
   it("cleanup drops ids that are no longer in the feed", async () => {
-    useReadItemsStore.setState({ readIds: new Set(["i1:rss:1", "i1:rss:2"]) })
-    await useReadItemsStore.getState().cleanup(new Set(["i1:rss:1"]))
+    useReadItemsStore.setState({ readIds: new Set(["rss:1", "rss:2"]) })
+    await useReadItemsStore.getState().cleanup(new Set(["rss:1"]))
 
-    expect(useReadItemsStore.getState().readIds).toEqual(new Set(["i1:rss:1"]))
-    expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["i1:rss:1"]))
+    expect(useReadItemsStore.getState().readIds).toEqual(new Set(["rss:1"]))
+    expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["rss:1"]))
   })
 
   it("cleanup is a no-op when every id is still present", async () => {
-    useReadItemsStore.setState({ readIds: new Set(["i1:rss:1"]) })
-    await useReadItemsStore.getState().cleanup(new Set(["i1:rss:1", "i1:rss:2"]))
+    useReadItemsStore.setState({ readIds: new Set(["rss:1"]) })
+    await useReadItemsStore.getState().cleanup(new Set(["rss:1", "rss:2"]))
     expect(asyncStorage.setItem).not.toHaveBeenCalled()
   })
 })

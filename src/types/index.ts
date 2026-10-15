@@ -41,8 +41,6 @@ export interface FeedRepository {
   url: string
   provider?: string
   config?: Record<string, unknown>
-  /** The origin instance — a `repository_id` is only unique within an instance. */
-  instanceId?: string
 }
 
 /** An existing flux of a provider, with the user's subscription state. */
@@ -52,7 +50,4 @@ export interface ProviderFlux {
   config: Record<string, unknown>
   created_at: string
   is_subscribed: boolean
-  /** Set for a flux living in a secondary database (otherwise null). */
-  dataSourceId?: number | null
-  dataSourceName?: string | null
 }

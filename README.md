@@ -24,8 +24,8 @@ Application mobile StayUp — un lecteur unifié qui agrège vos sources de veil
 
 ## Fonctionnalités
 
-- **Feed unifié** — tous les providers agrégés, triés par date, filtrables par provider ou par flux. Chaque provider est rendu à partir du template d'affichage relayé par l'API, sans code dédié dans l'app.
-- **Plusieurs serveurs** — pointer l'app vers n'importe quelle instance `stayup-api` (vérifiée, avec création de compte, avant enregistrement), en suivre plusieurs à la fois, chaque ligne du feed portant un badge du serveur d'origine.
+- **Feed unifié** — tous les providers agrégés, triés par date, filtrables par provider ou par flux. Chaque provider est rendu à partir d'un template embarqué dans l'app (`src/lib/providers.ts`).
+- **Une seule API** — l'app parle à l'API StayUp définie à la compilation par `EXPO_PUBLIC_STAYUP_API_URL`.
 - **Suivi de lecture** — items lus/non lus persistés localement, filtre « non lu », tout marquer lu.
 - **Lecteur d'articles** — vue plein écran avec navigation précédent/suivant.
 - **Gestion des flux** — ajout via le descripteur de formulaire du provider, abonnement à un flux existant ou demande de nouveau flux quand le provider est en validation manuelle.
@@ -80,12 +80,9 @@ tests/                Tests unitaires et composants
 
 ## API
 
-L'app parle à une ou plusieurs instances `stayup-api`. La liste des instances est gérée
-dans `src/lib/store.ts` (`instances[0]` est la primaire) ; `DEFAULT_API_URL`
-(`https://stayup-api.r-sik.workers.dev`) sert de valeur par défaut au premier ajout, et
-chaque instance se choisit depuis l'écran de connexion ou le profil. Le token JWT de chaque
-instance est conservé dans le keychain via `expo-secure-store` (`tok_<id>`), les métadonnées
-en AsyncStorage.
+L'app parle à une seule API StayUp, définie par `EXPO_PUBLIC_STAYUP_API_URL`
+(`https://stayup-api.r-sik.workers.dev` par défaut, voir `src/lib/config.ts`). Le token JWT est
+conservé dans le keychain via `expo-secure-store` (`auth_token`).
 
 ## CI/CD
 

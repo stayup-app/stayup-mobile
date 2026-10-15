@@ -1,15 +1,14 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { View, Text, Pressable } from "react-native"
 import { CheckCheck } from "lucide-react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { useAuth } from "@/hooks/useAuth"
-import { useFeed, needsReconnect, type InstanceError } from "@/hooks/useFeed"
+import { useFeed } from "@/hooks/useFeed"
 import { useLanguage } from "@/context/LanguageContext"
 import { UnifiedFeedList } from "@/components/feed/UnifiedFeedList"
 import { FeedFluxList } from "@/components/feed/FeedFluxList"
 import { AddFluxSheet } from "@/components/feed/AddFluxSheet"
-import { InstancesSheet } from "@/components/instances/InstancesSheet"
 import { LoadingScreen } from "@/components/ui/LoadingScreen"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
 import { useReadItemsStore, getTaggedItemId } from "@/store/readItems"
@@ -18,15 +17,18 @@ import type { Provider, TaggedItem } from "@/types"
 
 type FilterMode = "all" | "unread"
 
-const srcKey = (instanceId: unknown, repositoryId: unknown) =>
-  `${typeof instanceId === "string" ? instanceId : ""}:${repositoryId}`
-
 export default function FeedScreen() {
   const router = useRouter()
   const auth = useAuth()
   const { t } = useLanguage()
-  const { fluxes, connectors, templates, instanceErrors, loading, error, refresh } = useFeed(
-    auth.instances,
+  // The API rejected the token: sign out and go back to the login screen.
+  const handleAuthError = useCallback(async () => {
+    await auth.logout()
+    router.replace("/(auth)/login")
+  }, [auth, router])
+  const { fluxes, connectors, templates, loading, error, refresh } = useFeed(
+    auth.token,
+    handleAuthError,
   )
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
   const [filterState, setFilterState] = useState<{ providerId: Provider | null; mode: FilterMode }>(
@@ -37,33 +39,13 @@ export default function FeedScreen() {
   )
   const filterMode = filterState.providerId === selectedProvider ? filterState.mode : "all"
   const [addVisible, setAddVisible] = useState(false)
-  // Instances à session morte (token expiré ou rejeté) : on pousse la feuille de
-  // reconnexion au lancement et à chaque refresh. `dismissedErrors` retient le lot
-  // déjà écarté ; un nouveau lot (nouvel objet) la rouvre.
-  const [dismissedErrors, setDismissedErrors] = useState<InstanceError[] | null>(null)
-  const reconnectNeeded = useMemo(() => needsReconnect(instanceErrors), [instanceErrors])
-  const showReconnect = reconnectNeeded.length > 0 && dismissedErrors !== instanceErrors
-  const unreachable = useMemo(
-    () => instanceErrors.filter((e) => e.reason === "unreachable"),
-    [instanceErrors],
-  )
-  const reconnectSheet = (
-    <InstancesSheet
-      visible={showReconnect}
-      onClose={() => setDismissedErrors(instanceErrors)}
-      auth={auth}
-      autoReason={reconnectNeeded.length > 0 ? reconnectNeeded : undefined}
-    />
-  )
   const { item: openItem, setItem } = useSelectedFeedItemStore()
   const { readIds, initialized, init, markAllRead, cleanup } = useReadItemsStore()
   const openItemId = openItem ? getTaggedItemId(openItem) : null
 
   useEffect(() => {
-    // Attendre que les instances soient chargées : `init` migre les clés d'items
-    // lus vers l'instance primaire, il lui faut donc son id.
-    if (auth.instances.length > 0) void init(auth.instances[0].id)
-  }, [init, auth.instances])
+    void init()
+  }, [init])
 
   useEffect(() => {
     if (!connectors || !initialized) return
@@ -86,11 +68,11 @@ export default function FeedScreen() {
     [connectors],
   )
 
-  const unreadCountByRepoId = useMemo<Record<string, number>>(() => {
-    const counts: Record<string, number> = {}
+  const unreadCountByRepoId = useMemo<Record<number, number>>(() => {
+    const counts: Record<number, number> = {}
     for (const tagged of allTaggedItems) {
       if (!readIds.has(getTaggedItemId(tagged))) {
-        const k = srcKey(tagged.item._instance_id, tagged.item.repository_id)
+        const k = tagged.item.repository_id
         counts[k] = (counts[k] ?? 0) + 1
       }
     }
@@ -103,10 +85,7 @@ export default function FeedScreen() {
   )
 
   function handlePressItem(tagged: TaggedItem) {
-    const flux = (fluxes ?? []).find(
-      (r) =>
-        r.repository_id === tagged.item.repository_id && r.instanceId === tagged.item._instance_id,
-    )
+    const flux = (fluxes ?? []).find((r) => r.repository_id === tagged.item.repository_id)
     setItem(tagged, {
       repoUrl: flux?.url ?? "",
       template: templates[tagged.provider]?.template ?? null,
@@ -126,7 +105,6 @@ export default function FeedScreen() {
         <Pressable onPress={refresh} className="rounded-xl bg-peach px-4 py-2.5">
           <Text className="font-semibold text-peach-on">{t.feed.retry}</Text>
         </Pressable>
-        {reconnectSheet}
       </View>
     )
   }
@@ -150,7 +128,8 @@ export default function FeedScreen() {
       <FeedFluxList
         fluxes={fluxes}
         templates={templates}
-        instances={auth.instances}
+        userId={auth.session?.userId ?? ""}
+        token={auth.token as string}
         selectedProvider={selectedProvider}
         onSelectProvider={setSelectedProvider}
         onAddPress={() => setAddVisible(true)}
@@ -158,14 +137,6 @@ export default function FeedScreen() {
         onImported={refresh}
         unreadCountByRepoId={unreadCountByRepoId}
       />
-
-      {unreachable.length > 0 && (
-        <View className="px-4 py-1.5" style={{ backgroundColor: colors.roseDim }}>
-          <Text className="text-xs" style={{ color: colors.rose }}>
-            {t.instances.unreachable} : {unreachable.map((e) => e.instanceName).join(", ")}
-          </Text>
-        </View>
-      )}
 
       {/* Filter bar */}
       <View
@@ -237,11 +208,9 @@ export default function FeedScreen() {
       <AddFluxSheet
         visible={addVisible}
         onClose={() => setAddVisible(false)}
-        instances={auth.instances}
+        token={auth.token as string}
         onSuccess={refresh}
       />
-
-      {reconnectSheet}
     </SafeAreaView>
   )
 }

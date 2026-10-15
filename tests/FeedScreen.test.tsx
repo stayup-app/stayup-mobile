@@ -2,7 +2,7 @@ import { screen, fireEvent, waitFor } from "@testing-library/react-native"
 import * as SecureStore from "expo-secure-store"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import FeedScreen from "../app/(app)/feed/index"
-import { getUserFeed, getConnectorProviders } from "@/lib/api"
+import { ApiError, getUserFeed, getConnectorProviders } from "@/lib/api"
 import { useReadItemsStore } from "@/store/readItems"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
 import { renderWithProviders } from "./render"
@@ -28,7 +28,10 @@ jest.mock("@/lib/api", () => ({
   },
 }))
 
-const secureStore = SecureStore as unknown as { getItemAsync: jest.Mock }
+const secureStore = SecureStore as unknown as {
+  getItemAsync: jest.Mock
+  deleteItemAsync: jest.Mock
+}
 const asyncStorage = AsyncStorage as unknown as { getItem: jest.Mock; setItem: jest.Mock }
 const mockedGetUserFeed = getUserFeed as jest.Mock
 const mockedGetProviders = getConnectorProviders as jest.Mock
@@ -74,13 +77,8 @@ function feedResponse(rss = [rssItem(1, "Article A"), rssItem(2, "Article B")]) 
  * AsyncStorage is shared by the language, the theme and the read items: we
  * answer by key so as not to inject a list of ids where a language is expected.
  */
-const INSTANCE_ID = "i1"
-const INSTANCE_META = JSON.stringify([
-  { id: INSTANCE_ID, url: "https://stayup-api.r-sik.workers.dev", name: "api" },
-])
-
 function stubStorage(values: Record<string, string> = {}) {
-  const all: Record<string, string> = { instances: INSTANCE_META, ...values }
+  const all: Record<string, string> = { ...values }
   asyncStorage.getItem.mockImplementation((key: string) => Promise.resolve(all[key] ?? null))
 }
 
@@ -91,7 +89,7 @@ function withReadItems(...ids: string[]) {
 
 beforeEach(() => {
   secureStore.getItemAsync.mockImplementation((k: string) =>
-    Promise.resolve(k === `tok_${INSTANCE_ID}` ? validToken() : null),
+    Promise.resolve(k === "auth_token" ? validToken() : null),
   )
   stubStorage()
   mockedGetUserFeed.mockResolvedValue(feedResponse())
@@ -149,7 +147,7 @@ describe("FeedScreen — affichage", () => {
 
 describe("FeedScreen — filtres", () => {
   it("keeps only unread items in unread mode", async () => {
-    withReadItems("i1:rss:1")
+    withReadItems("rss:1")
     renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
@@ -160,9 +158,9 @@ describe("FeedScreen — filtres", () => {
   })
 
   it("keeps the currently open item visible in unread mode", async () => {
-    withReadItems("i1:rss:1")
+    withReadItems("rss:1")
     useSelectedFeedItemStore.setState({
-      item: { provider: "rss", item: { ...rssItem(1, "Article A"), _instance_id: "i1" } },
+      item: { provider: "rss", item: { ...rssItem(1, "Article A") } },
       repoUrl: "",
     })
     renderWithProviders(<FeedScreen />)
@@ -175,7 +173,7 @@ describe("FeedScreen — filtres", () => {
   })
 
   it("switches back to the all filter", async () => {
-    withReadItems("i1:rss:1")
+    withReadItems("rss:1")
     renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
@@ -206,7 +204,7 @@ describe("FeedScreen — lecture", () => {
     await waitFor(() =>
       expect(asyncStorage.setItem).toHaveBeenCalledWith(
         "read_items",
-        JSON.stringify(["i1:rss:1", "i1:rss:2"]),
+        JSON.stringify(["rss:1", "rss:2"]),
       ),
     )
   })
@@ -222,57 +220,22 @@ describe("FeedScreen — lecture", () => {
   })
 
   it("drops stored ids that are no longer in the feed", async () => {
-    withReadItems("i1:rss:1", "i1:rss:999")
+    withReadItems("rss:1", "rss:999")
     renderWithProviders(<FeedScreen />)
 
     await waitFor(() =>
-      expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["i1:rss:1"])),
+      expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["rss:1"])),
     )
   })
 })
 
-describe("FeedScreen — multi-instance", () => {
-  it("shows a soft strip for an unreachable instance without dropping the feed", async () => {
-    stubStorage({
-      instances: JSON.stringify([
-        { id: "i1", url: "https://a.dev", name: "A" },
-        { id: "i2", url: "https://b.dev", name: "Beta" },
-      ]),
-    })
-    secureStore.getItemAsync.mockImplementation((k: string) =>
-      Promise.resolve(k === "tok_i1" || k === "tok_i2" ? validToken() : null),
-    )
-    mockedGetUserFeed.mockResolvedValueOnce(feedResponse()).mockRejectedValueOnce(new Error("down"))
-
+describe("FeedScreen — session", () => {
+  it("signs the user out when the API rejects the token", async () => {
+    mockedGetUserFeed.mockRejectedValue(new ApiError(401, "Unauthorized"))
     renderWithProviders(<FeedScreen />)
 
-    await waitFor(() => expect(screen.getByText(/Injoignable/)).toBeTruthy())
-    expect(screen.getByText("Article A")).toBeTruthy()
-    // A transient failure is a retry situation, not a reconnection prompt.
-    expect(screen.queryByText(/Ces serveurs demandent une reconnexion/)).toBeNull()
-  })
-
-  it("pushes the reconnect sheet when a session has expired, and lets it be dismissed", async () => {
-    const expiredToken = () =>
-      `${btoa("{}")}.${btoa(
-        JSON.stringify({ sub: "user-1", exp: Math.floor(Date.now() / 1000) - 10 }),
-      )}.sig`
-    secureStore.getItemAsync.mockImplementation((k: string) =>
-      Promise.resolve(k === `tok_${INSTANCE_ID}` ? expiredToken() : null),
-    )
-
-    renderWithProviders(<FeedScreen />)
-
-    await waitFor(() =>
-      expect(screen.getByText(/Ces serveurs demandent une reconnexion/)).toBeTruthy(),
-    )
-    // Not surfaced as the transient "unreachable" strip.
-    expect(screen.queryByText(/Injoignable/)).toBeNull()
-
-    fireEvent.press(screen.getAllByTestId("icon-X")[0])
-    await waitFor(() =>
-      expect(screen.queryByText(/Ces serveurs demandent une reconnexion/)).toBeNull(),
-    )
+    await waitFor(() => expect(secureStore.deleteItemAsync).toHaveBeenCalledWith("auth_token"))
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login"))
   })
 })
 

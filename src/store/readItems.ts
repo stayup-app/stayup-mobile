@@ -2,24 +2,24 @@ import { create } from "zustand"
 import { readReadItems, writeReadItems } from "@/lib/store"
 import type { TaggedItem } from "@/types"
 
-/** Key for a read item: `<instanceId>:<provider>:<id>`. A connector id
- *  (SERIAL) is only unique within an instance, hence the prefix. */
+/** Key for a read item: `<provider>:<id>`. */
 export function getTaggedItemId(tagged: TaggedItem): string {
-  const inst = typeof tagged.item._instance_id === "string" ? tagged.item._instance_id : ""
-  return `${inst}:${tagged.provider}:${tagged.item.id}`
+  return `${tagged.provider}:${tagged.item.id}`
 }
 
-/** Migration: pre-multi-instance keys are `<provider>:<id>` (2 segments) — we
- *  attach them to the primary instance. */
-function migrateIds(stored: string[], primaryId: string | undefined): string[] {
-  if (!primaryId) return stored
-  return stored.map((id) => (id.split(":").length === 2 ? `${primaryId}:${id}` : id))
+/** Drops the instance segment of keys stored by multi-server versions
+ *  (`<instanceId>:<provider>:<id>`), keeping the read state. */
+function migrateIds(stored: string[]): string[] {
+  return stored.map((id) => {
+    const parts = id.split(":")
+    return parts.length === 3 ? parts.slice(1).join(":") : id
+  })
 }
 
 interface ReadItemsState {
   readIds: Set<string>
   initialized: boolean
-  init: (primaryInstanceId?: string) => Promise<void>
+  init: () => Promise<void>
   markRead: (tagged: TaggedItem) => Promise<void>
   markAllRead: (items: TaggedItem[]) => Promise<void>
   cleanup: (currentIds: Set<string>) => Promise<void>
@@ -29,9 +29,9 @@ export const useReadItemsStore = create<ReadItemsState>()((set, get) => ({
   readIds: new Set(),
   initialized: false,
 
-  init: async (primaryInstanceId?: string) => {
+  init: async () => {
     if (get().initialized) return
-    const stored = migrateIds(await readReadItems(), primaryInstanceId)
+    const stored = migrateIds(await readReadItems())
     set({ readIds: new Set(stored), initialized: true })
   },
 

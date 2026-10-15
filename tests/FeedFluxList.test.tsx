@@ -15,10 +15,6 @@ const mockedDelete = deleteUserRepository as jest.Mock
 const TOKEN = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: "user-1" }))
   .toString("base64")
   .replace(/=/g, "")}.sig`
-const INSTANCES = [
-  { id: "i1", url: "https://stayup-api.r-sik.workers.dev", name: "Primary", token: TOKEN },
-]
-
 const fluxes: FeedFlux[] = [
   {
     id: "link-1",
@@ -26,8 +22,6 @@ const fluxes: FeedFlux[] = [
     provider: "changelog",
     url: "https://github.com/facebook/react/",
     identifier: "facebook/react",
-    instanceId: "i1",
-    instanceName: "Primary",
   },
   {
     id: "link-2",
@@ -35,8 +29,6 @@ const fluxes: FeedFlux[] = [
     provider: "youtube",
     url: "https://www.youtube.com/@fireship",
     identifier: "@fireship",
-    instanceId: "i1",
-    instanceName: "Primary",
   },
 ]
 
@@ -50,7 +42,8 @@ function setup(props: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
     <FeedFluxList
       fluxes={fluxes}
       templates={TEMPLATES}
-      instances={INSTANCES}
+      userId="user-1"
+      token={TOKEN}
       selectedProvider={null}
       onSelectProvider={onSelectProvider}
       onAddPress={onAddPress}
@@ -116,7 +109,7 @@ describe("FeedFluxList", () => {
   })
 
   it("sums the unread counts per provider", async () => {
-    setup({ unreadCountByRepoId: { "i1:10": 3, "i1:11": 2 } })
+    setup({ unreadCountByRepoId: { 10: 3, 11: 2 } })
 
     await waitFor(() => expect(screen.getByText("3")).toBeTruthy())
     expect(screen.getByText("2")).toBeTruthy()
@@ -130,7 +123,7 @@ describe("FeedFluxList", () => {
   })
 
   it("shows the per-flux unread badge", async () => {
-    setup({ selectedProvider: "changelog", unreadCountByRepoId: { "i1:10": 7 } })
+    setup({ selectedProvider: "changelog", unreadCountByRepoId: { 10: 7 } })
 
     // The provider badge and the flux badge both show 7.
     await waitFor(() => expect(screen.getAllByText("7")).toHaveLength(2))
@@ -160,50 +153,6 @@ describe("FeedFluxList", () => {
 
     await waitFor(() => expect(screen.queryByText("Tous les flux")).toBeNull())
     expect(screen.queryByText("YouTube")).toBeNull()
-  })
-})
-
-describe("FeedFluxList — multi-instance", () => {
-  it("badges each flux with its instance name once several are connected", () => {
-    setup({
-      selectedProvider: "changelog",
-      instances: [
-        { id: "i1", url: "https://a.test", name: "Alpha", token: TOKEN },
-        { id: "i2", url: "https://b.test", name: "Beta", token: TOKEN },
-      ],
-      fluxes: [
-        { ...fluxes[0], instanceId: "i1", instanceName: "Alpha" },
-        { ...fluxes[0], id: "l2", instanceId: "i2", instanceName: "Beta" },
-      ],
-    })
-    expect(screen.getByText("Alpha")).toBeTruthy()
-    expect(screen.getByText("Beta")).toBeTruthy()
-  })
-
-  it("shows the current server name on the badge, not the one stamped at feed load", () => {
-    setup({
-      selectedProvider: "changelog",
-      instances: [
-        { id: "i1", url: "https://a.test", name: "Main", token: TOKEN },
-        { id: "i2", url: "https://b.test", name: "Beta", token: TOKEN },
-      ],
-      fluxes: [
-        { ...fluxes[0], instanceId: "i1", instanceName: "old-host.example" },
-        { ...fluxes[0], id: "l2", instanceId: "i2", instanceName: "Beta" },
-      ],
-    })
-    expect(screen.getByText("Main")).toBeTruthy()
-    expect(screen.queryByText("old-host.example")).toBeNull()
-  })
-
-  it("shows no instance badge with a single instance", () => {
-    setup({ selectedProvider: "changelog" })
-    expect(screen.queryByText("Primary")).toBeNull()
-  })
-
-  it("tolerates an empty instance list", () => {
-    setup({ instances: [] })
-    expect(screen.getByText("Tous les flux")).toBeTruthy()
   })
 })
 
@@ -243,29 +192,8 @@ describe("FeedFluxList — suppression", () => {
     pressDelete()
     await confirmAlert(spy)
 
-    expect(mockedDelete).toHaveBeenCalledWith(
-      "user-1",
-      "link-1",
-      TOKEN,
-      "https://stayup-api.r-sik.workers.dev",
-    )
+    expect(mockedDelete).toHaveBeenCalledWith("user-1", "link-1", TOKEN)
     expect(onDeleted).toHaveBeenCalled()
-    spy.mockRestore()
-  })
-
-  it("does nothing when the flux's instance is unknown", async () => {
-    const spy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
-    const { onDeleted } = setup({
-      selectedProvider: "changelog",
-      fluxes: [{ ...fluxes[0], instanceId: "gone" }],
-    })
-    await waitFor(() => expect(screen.getByTestId("icon-Trash2")).toBeTruthy())
-
-    pressDelete()
-    await confirmAlert(spy)
-
-    expect(mockedDelete).not.toHaveBeenCalled()
-    expect(onDeleted).not.toHaveBeenCalled()
     spy.mockRestore()
   })
 

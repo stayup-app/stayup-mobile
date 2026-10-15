@@ -1,32 +1,5 @@
 export const en = {
-  instances: {
-    title: "Servers",
-    subtitle: "Follow feeds from several API instances at once.",
-    primary: "Primary",
-    add: "Add a server",
-    urlLabel: "Server URL",
-    urlPlaceholder: "https://your-api.example.com",
-    cancel: "Cancel",
-    next: "Next",
-    makePrimary: "Make primary",
-    reconnect: "Reconnect",
-    remove: "Remove",
-    save: "Save",
-    expired: "Session expired",
-    removePrimaryWarning: "Removing your primary server signs you out of everything.",
-    unreachable: "Unreachable",
-    reconnectPrompt: "These servers need you to sign in again:",
-    manage: "Servers",
-    urlUnreachable: "Can't reach that server.",
-    urlIncompatible: "This URL is not a StayUp API.",
-  },
-  serverStatus: {
-    title: "Server status",
-    connected: "Connected",
-    disconnected: "Disconnected",
-  },
   auth: {
-    accountPending: "Account created. An administrator needs to approve it before you can sign in.",
     subtitle: "Pick up right where you left off.",
     loginTitle: "Good to see you again.",
     registerTitle: "Create your account.",
@@ -47,9 +20,6 @@ export const en = {
     continueWithGitHub: "Continue with GitHub",
     continueWithGoogle: "Continue with Google",
     or: "or",
-    server: "Server",
-    pendingApprovalHint:
-      "Your account will need an administrator to approve it before you can sign in.",
   },
   tabs: {
     feed: "Feed",
@@ -119,11 +89,6 @@ export const en = {
     language: "Language",
     lightMode: "Light mode",
     darkMode: "Dark mode",
-    apiUrl: "API URL",
-    apiUrlSave: "Save",
-    apiUrlSaved: "API URL updated.",
-    apiUrlReset: "Reset to default",
-    apiUrlInvalid: "Enter a valid URL.",
   },
   // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
   errors: {

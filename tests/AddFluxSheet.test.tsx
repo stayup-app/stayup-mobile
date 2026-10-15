@@ -24,11 +24,9 @@ const mockedGetFluxes = getProviderFluxes as jest.Mock
 const mockedSubscribe = subscribeFlux as jest.Mock
 const mockedGetConnectorProviders = getConnectorProviders as jest.Mock
 
-const API_URL = "https://stayup-api.r-sik.workers.dev"
 const TOKEN = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: "user-1" }))
   .toString("base64")
   .replace(/=/g, "")}.sig`
-const INSTANCES = [{ id: "i1", url: API_URL, name: "Primary", token: TOKEN }]
 
 // `scrap` is the `manual`-mode provider in this fixture set.
 function providers() {
@@ -42,13 +40,7 @@ async function setup(props: Partial<React.ComponentProps<typeof AddFluxSheet>> =
   const onClose = jest.fn()
   const onSuccess = jest.fn()
   renderWithProviders(
-    <AddFluxSheet
-      visible
-      onClose={onClose}
-      instances={INSTANCES}
-      onSuccess={onSuccess}
-      {...props}
-    />,
+    <AddFluxSheet visible onClose={onClose} token={TOKEN} onSuccess={onSuccess} {...props} />,
   )
   await waitFor(() => expect(screen.getByText("Changelog")).toBeTruthy())
   return { onClose, onSuccess }
@@ -83,7 +75,7 @@ describe("AddFluxSheet — add a new flux", () => {
     fireEvent.press(screen.getByText("Ajouter"))
 
     await waitFor(() =>
-      expect(mockedAdd).toHaveBeenCalledWith("user-1", TOKEN, API_URL, {
+      expect(mockedAdd).toHaveBeenCalledWith("user-1", TOKEN, {
         provider: "changelog",
         url: "https://github.com/facebook/react/",
         config: { max_scraps: 5, retention_days: 15 },
@@ -144,34 +136,7 @@ describe("AddFluxSheet — subscribe to an existing flux", () => {
     fireEvent.press(screen.getByText("a.example"))
     fireEvent.press(screen.getByText("Ajouter"))
 
-    await waitFor(() =>
-      expect(mockedSubscribe).toHaveBeenCalledWith("rss", 1, TOKEN, API_URL, undefined),
-    )
-    expect(onSuccess).toHaveBeenCalled()
-  })
-
-  it("subscribes to a flux living in a secondary database", async () => {
-    mockedGetFluxes.mockResolvedValue([
-      {
-        id: 3,
-        url: "https://ext.example.com",
-        config: {},
-        created_at: "",
-        is_subscribed: false,
-        dataSourceId: 7,
-        dataSourceName: "Team feeds",
-      },
-    ])
-    const { onSuccess } = await setup()
-    fireEvent.press(screen.getByText("RSS"))
-
-    await waitFor(() => expect(screen.getByText("ext.example")).toBeTruthy())
-    expect(screen.getByText("Team feeds")).toBeTruthy()
-
-    fireEvent.press(screen.getByText("ext.example"))
-    fireEvent.press(screen.getByText("Ajouter"))
-
-    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("rss", 3, TOKEN, API_URL, 7))
+    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("rss", 1, TOKEN))
     expect(onSuccess).toHaveBeenCalled()
   })
 
@@ -246,18 +211,6 @@ describe("AddFluxSheet — mode toggle & guards", () => {
     expect(mockedAdd).not.toHaveBeenCalled()
   })
 
-  it("fails closed when there is no instance to target", async () => {
-    const onClose = jest.fn()
-    renderWithProviders(
-      <AddFluxSheet visible onClose={onClose} instances={[]} onSuccess={jest.fn()} />,
-    )
-    fireEvent.press(screen.getByText("Ajouter un nouveau"))
-    fireEvent.changeText(firstInput(), "facebook/react")
-    fireEvent.press(screen.getByText("Ajouter"))
-    await waitFor(() => expect(screen.getByText("Token manquant")).toBeTruthy())
-    expect(mockedAdd).not.toHaveBeenCalled()
-  })
-
   it("falls back to a generic message when a non-Error is thrown", async () => {
     mockedAdd.mockRejectedValue("nope")
     await setup()
@@ -280,32 +233,7 @@ describe("AddFluxSheet — mode toggle & guards", () => {
   })
 })
 
-describe("AddFluxSheet — instance selector", () => {
-  it("fetches providers and fluxes against the picked instance", async () => {
-    const TOKEN_B = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: "bob" }))
-      .toString("base64")
-      .replace(/=/g, "")}.sig`
-    const two = [INSTANCES[0], { id: "i2", url: "https://b.test", name: "Beta", token: TOKEN_B }]
-    await setup({ instances: two })
-
-    fireEvent.press(screen.getByText("Beta"))
-
-    await waitFor(() =>
-      expect(mockedGetConnectorProviders).toHaveBeenLastCalledWith(TOKEN_B, "https://b.test"),
-    )
-  })
-})
-
 describe("AddFluxSheet — degraded auth & payloads", () => {
-  it("fetches nothing when there is no instance", async () => {
-    renderWithProviders(
-      <AddFluxSheet visible onClose={jest.fn()} instances={[]} onSuccess={jest.fn()} />,
-    )
-    await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
-    expect(mockedGetConnectorProviders).not.toHaveBeenCalled()
-    expect(mockedGetFluxes).not.toHaveBeenCalled()
-  })
-
   it("tolerates a flux endpoint that resolves nothing", async () => {
     mockedGetFluxes.mockResolvedValue(undefined as never)
     await setup()
@@ -317,7 +245,7 @@ describe("AddFluxSheet — degraded auth & payloads", () => {
     const onClose = jest.fn()
     const onSuccess = jest.fn()
     renderWithProviders(
-      <AddFluxSheet visible onClose={onClose} instances={INSTANCES} onSuccess={onSuccess} />,
+      <AddFluxSheet visible onClose={onClose} token={TOKEN} onSuccess={onSuccess} />,
     )
     await waitFor(() => expect(screen.getByText("custom")).toBeTruthy())
   })
@@ -329,7 +257,7 @@ describe("AddFluxSheet — network failures", () => {
     const onClose = jest.fn()
     const onSuccess = jest.fn()
     renderWithProviders(
-      <AddFluxSheet visible onClose={onClose} instances={INSTANCES} onSuccess={onSuccess} />,
+      <AddFluxSheet visible onClose={onClose} token={TOKEN} onSuccess={onSuccess} />,
     )
     await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
     expect(screen.queryByText("Changelog")).toBeNull()
