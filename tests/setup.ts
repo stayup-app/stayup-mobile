@@ -60,6 +60,22 @@ jest.mock("expo-linking", () => ({
   useURL: () => null,
 }))
 
+// No notification service under Jest: push and the icon badge are native.
+jest.mock("expo-notifications", () => ({
+  setNotificationHandler: jest.fn(),
+  getPermissionsAsync: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
+  getExpoPushTokenAsync: jest.fn().mockResolvedValue({ data: "ExponentPushToken[abc]" }),
+  setBadgeCountAsync: jest.fn().mockResolvedValue(true),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  AndroidImportance: { DEFAULT: 3 },
+}))
+
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: { expoConfig: { extra: { eas: { projectId: "project-1" } } }, easConfig: undefined },
+}))
+
 jest.mock("expo-image", () => ({ Image: require("react-native").Image }))
 
 jest.mock("react-native-safe-area-context", () => {

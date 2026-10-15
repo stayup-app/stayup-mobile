@@ -116,3 +116,26 @@ describe("read items storage", () => {
     expect(async.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["i1:rss:1"]))
   })
 })
+
+describe("push settings", () => {
+  const { readPushEnabled, writePushEnabled, readPushToken, writePushToken } =
+    jest.requireActual("../src/lib/store")
+
+  it("is on unless turned off", async () => {
+    stage()
+    await expect(readPushEnabled()).resolves.toBe(true)
+    await writePushEnabled(false)
+    await expect(readPushEnabled()).resolves.toBe(false)
+    await writePushEnabled(true)
+    await expect(readPushEnabled()).resolves.toBe(true)
+  })
+
+  it("remembers the device's push token, and forgets it", async () => {
+    stage()
+    await expect(readPushToken()).resolves.toBeNull()
+    await writePushToken("ExponentPushToken[abc]")
+    await expect(readPushToken()).resolves.toBe("ExponentPushToken[abc]")
+    await writePushToken(null)
+    await expect(readPushToken()).resolves.toBeNull()
+  })
+})

@@ -2,10 +2,10 @@ import { useState, useEffect } from "react"
 import { ScrollView, View, Text, Pressable } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
-import { ChevronLeft } from "lucide-react-native"
+import { ChevronLeft, Star } from "lucide-react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
-import { useReadItemsStore } from "@/store/readItems"
+import { useReadItemsStore, getTaggedItemId } from "@/store/readItems"
 import { useLanguage } from "@/context/LanguageContext"
 import { formatDate, providerDisplayName } from "@/lib/utils"
 import { colors } from "@/theme"
@@ -22,7 +22,7 @@ export default function FeedDetailScreen() {
   const router = useRouter()
   const { t } = useLanguage()
   const { item: tagged, template, source } = useSelectedFeedItemStore()
-  const { markRead } = useReadItemsStore()
+  const { markRead, savedIds, toggleSaved } = useReadItemsStore()
   const [fontSizeOffset, setFontSizeOffset] = useState(0)
 
   useEffect(() => {
@@ -46,6 +46,7 @@ export default function FeedDetailScreen() {
   if (!tagged) return null
 
   const bodyFontSize = BASE_FONT + fontSizeOffset
+  const isSaved = savedIds.has(getTaggedItemId(tagged))
   const headerTitle = template
     ? resolveText(
         template.detail?.title ?? template.item?.fields?.title,
@@ -75,6 +76,18 @@ export default function FeedDetailScreen() {
           {headerTitle}
         </Text>
         <View className="flex-row items-center gap-1">
+          <Pressable
+            onPress={() => void toggleSaved(tagged)}
+            accessibilityLabel={isSaved ? t.feed.removeFromSaved : t.feed.saveForLater}
+            accessibilityState={{ selected: isSaved }}
+            className="rounded px-2 py-1"
+          >
+            <Star
+              size={18}
+              color={isSaved ? colors.peach : colors.muted}
+              fill={isSaved ? colors.peach : "none"}
+            />
+          </Pressable>
           <Pressable
             onPress={() => adjustFont(-1)}
             disabled={fontSizeOffset <= MIN_OFFSET}

@@ -36,6 +36,14 @@ export const es: Translations = {
     filterAll: "Todos",
     filterUnread: "No leídos",
     markAllRead: "Marcar todo como leído",
+    folderSave: "Guardar",
+    filterSaved: "Guardados",
+    saveForLater: "Guardar para después",
+    removeFromSaved: "Quitar de guardados",
+    searchPlaceholder: "Buscar…",
+    clearSearch: "Borrar búsqueda",
+    folderPrompt: "Nombre de la carpeta (vacío para quitar)",
+    moveToFolder: "Mover a una carpeta",
   },
   importExport: {
     export: "Exportar feeds",
@@ -87,6 +95,10 @@ export const es: Translations = {
   profile: {
     title: "Perfil",
     signOut: "Cerrar sesión",
+    pushTitle: "Notificaciones",
+    pushToggle: "Notificaciones push",
+    pushDescription:
+      "Recibir avisos de elementos nuevos, con el número de no leídos en el icono de la app.",
     theme: "Tema",
     language: "Idioma",
     lightMode: "Modo claro",

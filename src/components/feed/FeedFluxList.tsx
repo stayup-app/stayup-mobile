@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { ScrollView, View, Text, Pressable, Alert } from "react-native"
-import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react-native"
+import { Plus, Trash2, ChevronDown, ChevronUp, Folder, FolderInput } from "lucide-react-native"
 import { ImportExportButtons } from "./ImportExportButtons"
 import type { FeedFlux } from "@/hooks/useFeed"
 import { useLanguage } from "@/context/LanguageContext"
@@ -17,6 +17,9 @@ interface FeedFluxListProps {
   token: string
   selectedProvider: Provider | null
   onSelectProvider: (p: Provider | null) => void
+  selectedFolder?: string | null
+  onSelectFolder?: (folder: string | null) => void
+  onMoveToFolder?: (flux: FeedFlux) => void
   onAddPress: () => void
   onDeleted: () => void
   onImported: () => void
@@ -30,6 +33,9 @@ export function FeedFluxList({
   token,
   selectedProvider,
   onSelectProvider,
+  selectedFolder = null,
+  onSelectFolder = () => {},
+  onMoveToFolder = () => {},
   onAddPress,
   onDeleted,
   onImported,
@@ -41,6 +47,16 @@ export function FeedFluxList({
   // Dynamic: the providers shown are those actually present in the user's
   // fluxes, not a closed hardcoded list.
   const providers = Array.from(new Set(fluxes.map((f) => f.provider)))
+  const folders = Array.from(
+    new Set(fluxes.map((f) => f.folder).filter((f): f is string => !!f)),
+  ).sort()
+  // The individual fluxes listed under the chips: those of the selected folder,
+  // or of the selected provider.
+  const visibleFluxes = selectedFolder
+    ? fluxes.filter((f) => f.folder === selectedFolder)
+    : selectedProvider
+      ? fluxes.filter((f) => f.provider === selectedProvider)
+      : []
 
   function meta(p: Provider) {
     return getProviderMeta(p, templates[p]?.template)
@@ -169,51 +185,92 @@ export function FeedFluxList({
                 </Pressable>
               )
             })}
+
+            {folders.map((folder) => {
+              const active = selectedFolder === folder
+              const folderUnread = fluxes
+                .filter((f) => f.folder === folder)
+                .reduce((sum, f) => sum + (unreadCountByRepoId[f.repository_id] ?? 0), 0)
+              return (
+                <Pressable
+                  key={`folder-${folder}`}
+                  onPress={() => onSelectFolder(active ? null : folder)}
+                  className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+                  style={{ backgroundColor: active ? colors.peachDim : colors.surface }}
+                >
+                  <Folder size={13} color={active ? colors.peach : colors.fgSoft} />
+                  <Text
+                    className="text-base font-medium"
+                    style={{ color: active ? colors.peach : colors.fgSoft }}
+                  >
+                    {folder}
+                  </Text>
+                  {folderUnread > 0 && (
+                    <View
+                      className="rounded-full px-1.5 py-0.5"
+                      style={{ backgroundColor: colors.peach }}
+                    >
+                      <Text
+                        className="text-xs font-mono font-semibold"
+                        style={{ color: colors.peachOn }}
+                      >
+                        {folderUnread}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              )
+            })}
           </ScrollView>
 
-          {/* Individual fluxes (when a provider is selected) */}
-          {selectedProvider && (
+          {/* Individual fluxes (when a provider or a folder is selected) */}
+          {(selectedProvider || selectedFolder) && (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerClassName="flex-row gap-2 px-4 pb-2"
             >
-              {fluxes
-                .filter((f) => f.provider === selectedProvider)
-                .map((flux) => {
-                  const fluxUnread = unreadCountByRepoId[flux.repository_id] ?? 0
-                  return (
-                    <View
-                      key={flux.id}
-                      className="flex-row items-center gap-1 rounded-lg border px-2 py-1"
-                      style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+              {visibleFluxes.map((flux) => {
+                const fluxUnread = unreadCountByRepoId[flux.repository_id] ?? 0
+                return (
+                  <View
+                    key={flux.id}
+                    className="flex-row items-center gap-1 rounded-lg border px-2 py-1"
+                    style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+                  >
+                    <Text
+                      className="max-w-[140px] text-sm font-mono"
+                      style={{ color: colors.fgSoft }}
+                      numberOfLines={1}
                     >
-                      <Text
-                        className="max-w-[140px] text-sm font-mono"
-                        style={{ color: colors.fgSoft }}
-                        numberOfLines={1}
+                      {flux.identifier}
+                    </Text>
+                    {fluxUnread > 0 && (
+                      <View
+                        className="rounded-full px-1 py-0.5"
+                        style={{ backgroundColor: colors.peach }}
                       >
-                        {flux.identifier}
-                      </Text>
-                      {fluxUnread > 0 && (
-                        <View
-                          className="rounded-full px-1 py-0.5"
-                          style={{ backgroundColor: colors.peach }}
+                        <Text
+                          className="text-xs font-mono font-semibold"
+                          style={{ color: colors.peachOn }}
                         >
-                          <Text
-                            className="text-xs font-mono font-semibold"
-                            style={{ color: colors.peachOn }}
-                          >
-                            {fluxUnread}
-                          </Text>
-                        </View>
-                      )}
-                      <Pressable onPress={() => handleDelete(flux)} className="ml-1 p-0.5">
-                        <Trash2 size={12} color={colors.muted} />
-                      </Pressable>
-                    </View>
-                  )
-                })}
+                          {fluxUnread}
+                        </Text>
+                      </View>
+                    )}
+                    <Pressable
+                      onPress={() => onMoveToFolder(flux)}
+                      accessibilityLabel={t.feed.moveToFolder}
+                      className="ml-1 p-0.5"
+                    >
+                      <FolderInput size={12} color={colors.muted} />
+                    </Pressable>
+                    <Pressable onPress={() => handleDelete(flux)} className="ml-1 p-0.5">
+                      <Trash2 size={12} color={colors.muted} />
+                    </Pressable>
+                  </View>
+                )
+              })}
             </ScrollView>
           )}
         </>

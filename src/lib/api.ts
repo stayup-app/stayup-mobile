@@ -8,6 +8,7 @@ export interface UserRepositoryItem {
   url: string
   provider: Provider
   config: Record<string, unknown>
+  folder?: string | null
 }
 
 export interface UserFeedResponse {
@@ -131,6 +132,90 @@ export async function registerWithPassword(
 
   const { token } = (await res.json()) as { token: string }
   return token
+}
+
+/** Read and saved items, as `<provider>:<id>` keys. */
+export interface ItemState {
+  read: string[]
+  saved: string[]
+}
+
+export function getItemState(userId: string, token: string): Promise<ItemState> {
+  return apiFetch<ItemState>(`/ui/users/${userId}/state`, token)
+}
+
+export async function markItemsRead(userId: string, ids: number[], token: string): Promise<void> {
+  await apiFetch(`/ui/users/${userId}/items/read`, token, {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  })
+}
+
+export async function setItemSaved(
+  userId: string,
+  itemId: number,
+  saved: boolean,
+  token: string,
+): Promise<void> {
+  await apiFetch(`/ui/users/${userId}/items/${itemId}/saved`, token, {
+    method: "PUT",
+    body: JSON.stringify({ saved }),
+  })
+}
+
+/** Rows come back with their `provider` column, which tags them for the feed. */
+export type ProviderItem = ConnectorItem & { provider: string }
+
+export async function listSavedItems(userId: string, token: string): Promise<ProviderItem[]> {
+  const data = await apiFetch<{ items: ProviderItem[] }>(`/ui/users/${userId}/saved`, token)
+  return data.items
+}
+
+export async function searchItems(
+  userId: string,
+  query: string,
+  token: string,
+): Promise<ProviderItem[]> {
+  const data = await apiFetch<{ items: ProviderItem[] }>(
+    `/ui/users/${userId}/search?q=${encodeURIComponent(query)}`,
+    token,
+  )
+  return data.items
+}
+
+export async function setRepositoryFolder(
+  userId: string,
+  linkId: string,
+  folder: string | null,
+  token: string,
+): Promise<void> {
+  await apiFetch(`/ui/users/${userId}/repositories/${linkId}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({ folder }),
+  })
+}
+
+export async function registerPushToken(
+  userId: string,
+  pushToken: string,
+  lang: string,
+  token: string,
+): Promise<void> {
+  await apiFetch(`/ui/users/${userId}/push-tokens`, token, {
+    method: "PUT",
+    body: JSON.stringify({ token: pushToken, lang }),
+  })
+}
+
+export async function unregisterPushToken(
+  userId: string,
+  pushToken: string,
+  token: string,
+): Promise<void> {
+  await apiFetch(`/ui/users/${userId}/push-tokens`, token, {
+    method: "DELETE",
+    body: JSON.stringify({ token: pushToken }),
+  })
 }
 
 export async function getUserFeed(userId: string, token: string): Promise<UserFeedResponse> {

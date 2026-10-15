@@ -248,3 +248,78 @@ describe("apiFetch — corps d'erreur et rejeu", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 })
+
+describe("item state endpoints", () => {
+  const TOKEN = "jwt"
+  const {
+    getItemState,
+    markItemsRead,
+    setItemSaved,
+    listSavedItems,
+    searchItems,
+    setRepositoryFolder,
+    registerPushToken,
+    unregisterPushToken,
+  } = jest.requireActual("../src/lib/api")
+
+  it("getItemState reads the keys", async () => {
+    mockFetch(200, { read: ["rss:1"], saved: [] })
+    await expect(getItemState("u1", TOKEN)).resolves.toEqual({ read: ["rss:1"], saved: [] })
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(`${API_URL}/ui/users/u1/state`)
+  })
+
+  it("markItemsRead POSTs the ids", async () => {
+    mockFetch(200, { success: true })
+    await markItemsRead("u1", [1, 2], TOKEN)
+    const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
+    expect(url).toBe(`${API_URL}/ui/users/u1/items/read`)
+    expect(init.method).toBe("POST")
+    expect(JSON.parse(init.body)).toEqual({ ids: [1, 2] })
+  })
+
+  it("setItemSaved PUTs the flag", async () => {
+    mockFetch(200, { success: true })
+    await setItemSaved("u1", 5, true, TOKEN)
+    const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
+    expect(url).toBe(`${API_URL}/ui/users/u1/items/5/saved`)
+    expect(init.method).toBe("PUT")
+    expect(JSON.parse(init.body)).toEqual({ saved: true })
+  })
+
+  it("listSavedItems unwraps the items", async () => {
+    mockFetch(200, { items: [{ id: 5, provider: "rss" }] })
+    await expect(listSavedItems("u1", TOKEN)).resolves.toEqual([{ id: 5, provider: "rss" }])
+  })
+
+  it("searchItems encodes the query", async () => {
+    mockFetch(200, { items: [] })
+    await searchItems("u1", "a&b c", TOKEN)
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
+      `${API_URL}/ui/users/u1/search?q=a%26b%20c`,
+    )
+  })
+
+  it("setRepositoryFolder PATCHes the folder, null to clear", async () => {
+    mockFetch(200, { success: true })
+    mockFetch(200, { success: true })
+    await setRepositoryFolder("u1", "l1", "AI", TOKEN)
+    await setRepositoryFolder("u1", "l1", null, TOKEN)
+    const calls = (global.fetch as jest.Mock).mock.calls
+    expect(calls[0][1].method).toBe("PATCH")
+    expect(JSON.parse(calls[0][1].body)).toEqual({ folder: "AI" })
+    expect(JSON.parse(calls[1][1].body)).toEqual({ folder: null })
+  })
+
+  it("registers and unregisters a push token", async () => {
+    mockFetch(200, { success: true })
+    mockFetch(200, { success: true })
+    await registerPushToken("u1", "ExponentPushToken[abc]", "fr", TOKEN)
+    await unregisterPushToken("u1", "ExponentPushToken[abc]", TOKEN)
+    const calls = (global.fetch as jest.Mock).mock.calls
+    expect(calls[0][0]).toBe(`${API_URL}/ui/users/u1/push-tokens`)
+    expect(calls[0][1].method).toBe("PUT")
+    expect(JSON.parse(calls[0][1].body)).toEqual({ token: "ExponentPushToken[abc]", lang: "fr" })
+    expect(calls[1][1].method).toBe("DELETE")
+    expect(JSON.parse(calls[1][1].body)).toEqual({ token: "ExponentPushToken[abc]" })
+  })
+})

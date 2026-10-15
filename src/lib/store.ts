@@ -67,3 +67,27 @@ export async function readReadItems(): Promise<string[]> {
 export async function writeReadItems(ids: string[]): Promise<void> {
   await AsyncStorage.setItem(READ_ITEMS_KEY, JSON.stringify(ids))
 }
+
+// ─── Push notifications ──────────────────────────────────────────────────────
+
+const PUSH_ENABLED_KEY = "push_enabled"
+const PUSH_TOKEN_KEY = "push_token"
+
+/** Push notifications are on unless the user turned them off. */
+export async function readPushEnabled(): Promise<boolean> {
+  return (await AsyncStorage.getItem(PUSH_ENABLED_KEY)) !== "false"
+}
+
+export async function writePushEnabled(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(PUSH_ENABLED_KEY, String(enabled))
+}
+
+/** The Expo push token this device registered with the API, if any. */
+export async function readPushToken(): Promise<string | null> {
+  return AsyncStorage.getItem(PUSH_TOKEN_KEY)
+}
+
+export async function writePushToken(token: string | null): Promise<void> {
+  if (token) await AsyncStorage.setItem(PUSH_TOKEN_KEY, token)
+  else await AsyncStorage.removeItem(PUSH_TOKEN_KEY)
+}

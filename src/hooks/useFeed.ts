@@ -11,6 +11,8 @@ export interface FeedFlux {
   provider: Provider
   url: string
   identifier: string
+  /** The user's own grouping of this flux, if any. */
+  folder?: string | null
 }
 
 interface FeedState {
@@ -51,6 +53,7 @@ export function useFeed(token: string | null, onAuthError: () => void): UseFeed 
             url: repo.url,
             config: (repo.config ?? {}) as Record<string, unknown>,
           }),
+          folder: repo.folder ?? null,
         })),
         connectors: data.connectors ?? {},
         templates: PROVIDERS,
