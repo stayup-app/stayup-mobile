@@ -12,17 +12,17 @@ beforeEach(() => {
 
 describe("ThemeToggle", () => {
   it("offers to switch to dark mode while in light mode", async () => {
-    renderWithProviders(<ThemeToggle />)
+    await renderWithProviders(<ThemeToggle />)
 
     await waitFor(() => expect(screen.getByText("Mode sombre")).toBeTruthy())
     expect(screen.getByTestId("icon-Moon")).toBeTruthy()
   })
 
   it("offers to switch back to light mode once dark", async () => {
-    renderWithProviders(<ThemeToggle />)
+    await renderWithProviders(<ThemeToggle />)
     await waitFor(() => expect(screen.getByText("Mode sombre")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Mode sombre"))
+    await fireEvent.press(screen.getByText("Mode sombre"))
 
     await waitFor(() => expect(screen.getByText("Mode clair")).toBeTruthy())
     expect(screen.getByTestId("icon-Sun")).toBeTruthy()
@@ -32,7 +32,7 @@ describe("ThemeToggle", () => {
 
 describe("LanguageSwitcher", () => {
   it("lists every supported language", async () => {
-    renderWithProviders(<LanguageSwitcher />)
+    await renderWithProviders(<LanguageSwitcher />)
 
     await waitFor(() => expect(screen.getByText("🇫🇷 Français")).toBeTruthy())
     expect(screen.getByText("🇬🇧 English")).toBeTruthy()
@@ -45,10 +45,10 @@ describe("LanguageSwitcher", () => {
   })
 
   it("switches the app to English", async () => {
-    renderWithProviders(<LanguageSwitcher />)
+    await renderWithProviders(<LanguageSwitcher />)
     await waitFor(() => expect(screen.getByText("🇬🇧 English")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("🇬🇧 English"))
+    await fireEvent.press(screen.getByText("🇬🇧 English"))
 
     await waitFor(() => expect(asyncStorage.setItem).toHaveBeenCalledWith("lang", "en"))
   })

@@ -137,7 +137,7 @@ export function RegisterForm({ onSubmit, loading, error }: RegisterFormProps) {
       )}
 
       <Pressable
-        onPress={submit}
+        onPress={() => submit()}
         disabled={loading}
         className="items-center rounded-xl py-3.5 active:opacity-90 disabled:opacity-50"
         style={{ backgroundColor: colors.peach }}

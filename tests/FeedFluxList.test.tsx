@@ -32,13 +32,13 @@ const fluxes: FeedFlux[] = [
   },
 ]
 
-function setup(props: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
+async function setup(props: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
   const onSelectProvider = jest.fn()
   const onAddPress = jest.fn()
   const onDeleted = jest.fn()
   const onImported = jest.fn()
 
-  renderWithProviders(
+  await renderWithProviders(
     <FeedFluxList
       fluxes={fluxes}
       templates={TEMPLATES}
@@ -62,7 +62,7 @@ beforeEach(() => {
 
 describe("FeedFluxList", () => {
   it("shows a chip only for providers that have fluxes", async () => {
-    setup()
+    await setup()
 
     await waitFor(() => expect(screen.getByText("Mes flux")).toBeTruthy())
     expect(screen.getByText("Tous les flux")).toBeTruthy()
@@ -73,83 +73,83 @@ describe("FeedFluxList", () => {
   })
 
   it("selects a provider", async () => {
-    const { onSelectProvider } = setup()
+    const { onSelectProvider } = await setup()
     await waitFor(() => expect(screen.getByText("YouTube")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("YouTube"))
+    await fireEvent.press(screen.getByText("YouTube"))
     expect(onSelectProvider).toHaveBeenCalledWith("youtube")
   })
 
   it("deselects the provider that is already active", async () => {
-    const { onSelectProvider } = setup({ selectedProvider: "youtube" })
+    const { onSelectProvider } = await setup({ selectedProvider: "youtube" })
     await waitFor(() => expect(screen.getByText("YouTube")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("YouTube"))
+    await fireEvent.press(screen.getByText("YouTube"))
     expect(onSelectProvider).toHaveBeenCalledWith(null)
   })
 
   it("resets the filter from the all-feeds chip", async () => {
-    const { onSelectProvider } = setup({ selectedProvider: "youtube" })
+    const { onSelectProvider } = await setup({ selectedProvider: "youtube" })
     await waitFor(() => expect(screen.getByText("Tous les flux")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Tous les flux"))
+    await fireEvent.press(screen.getByText("Tous les flux"))
     expect(onSelectProvider).toHaveBeenCalledWith(null)
   })
 
   it("asks to add a flux", async () => {
-    const { onAddPress } = setup()
+    const { onAddPress } = await setup()
     await waitFor(() => expect(screen.getByTestId("icon-Plus")).toBeTruthy())
 
     // The + button stops propagation so the section is not collapsed.
     const stopPropagation = jest.fn()
-    fireEvent.press(screen.getByTestId("icon-Plus"), { stopPropagation })
+    await fireEvent.press(screen.getByTestId("icon-Plus"), { stopPropagation })
 
     expect(stopPropagation).toHaveBeenCalled()
     expect(onAddPress).toHaveBeenCalled()
   })
 
   it("sums the unread counts per provider", async () => {
-    setup({ unreadCountByRepoId: { 10: 3, 11: 2 } })
+    await setup({ unreadCountByRepoId: { 10: 3, 11: 2 } })
 
     await waitFor(() => expect(screen.getByText("3")).toBeTruthy())
     expect(screen.getByText("2")).toBeTruthy()
   })
 
   it("lists the individual fluxes of the selected provider", async () => {
-    setup({ selectedProvider: "changelog" })
+    await setup({ selectedProvider: "changelog" })
 
     await waitFor(() => expect(screen.getByText("facebook/react")).toBeTruthy())
     expect(screen.getByTestId("icon-Trash2")).toBeTruthy()
   })
 
   it("shows the per-flux unread badge", async () => {
-    setup({ selectedProvider: "changelog", unreadCountByRepoId: { 10: 7 } })
+    await setup({ selectedProvider: "changelog", unreadCountByRepoId: { 10: 7 } })
 
     // The provider badge and the flux badge both show 7.
     await waitFor(() => expect(screen.getAllByText("7")).toHaveLength(2))
   })
 
   it("collapses and re-expands the section", async () => {
-    setup({ selectedProvider: "youtube" })
+    await setup({ selectedProvider: "youtube" })
     await waitFor(() => expect(screen.getByText("Tous les flux")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Mes flux"))
+    await fireEvent.press(screen.getByText("Mes flux"))
 
     // Collapsed: the chips disappear, the active-filter badge appears.
     await waitFor(() => expect(screen.queryByText("Tous les flux")).toBeNull())
     expect(screen.getByText("YouTube")).toBeTruthy()
     expect(screen.getByTestId("icon-ChevronDown")).toBeTruthy()
 
-    fireEvent.press(screen.getByText("Mes flux"))
+    await fireEvent.press(screen.getByText("Mes flux"))
     await waitFor(() => expect(screen.getByText("Tous les flux")).toBeTruthy())
     expect(screen.getByTestId("icon-ChevronUp")).toBeTruthy()
   })
 
   it("hides the active-filter badge when collapsed with no filter", async () => {
-    setup()
+    await setup()
     await waitFor(() => expect(screen.getByText("Tous les flux")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Mes flux"))
+    await fireEvent.press(screen.getByText("Mes flux"))
 
     await waitFor(() => expect(screen.queryByText("Tous les flux")).toBeNull())
     expect(screen.queryByText("YouTube")).toBeNull()
@@ -157,8 +157,8 @@ describe("FeedFluxList", () => {
 })
 
 describe("FeedFluxList — suppression", () => {
-  function pressDelete() {
-    fireEvent.press(screen.getByTestId("icon-Trash2"))
+  async function pressDelete() {
+    await fireEvent.press(screen.getByTestId("icon-Trash2"))
   }
 
   /** Triggers the destructive action of the last Alert.alert. */
@@ -169,10 +169,10 @@ describe("FeedFluxList — suppression", () => {
 
   it("asks for confirmation before deleting", async () => {
     const spy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
-    setup({ selectedProvider: "changelog" })
+    await setup({ selectedProvider: "changelog" })
     await waitFor(() => expect(screen.getByTestId("icon-Trash2")).toBeTruthy())
 
-    pressDelete()
+    await pressDelete()
 
     expect(spy).toHaveBeenCalledWith(
       "Voulez-vous vraiment supprimer ?",
@@ -186,10 +186,10 @@ describe("FeedFluxList — suppression", () => {
   it("deletes the flux once confirmed", async () => {
     const spy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
     mockedDelete.mockResolvedValue(undefined)
-    const { onDeleted } = setup({ selectedProvider: "changelog" })
+    const { onDeleted } = await setup({ selectedProvider: "changelog" })
     await waitFor(() => expect(screen.getByTestId("icon-Trash2")).toBeTruthy())
 
-    pressDelete()
+    await pressDelete()
     await confirmAlert(spy)
 
     expect(mockedDelete).toHaveBeenCalledWith("user-1", "link-1", TOKEN)
@@ -200,10 +200,10 @@ describe("FeedFluxList — suppression", () => {
   it("swallows a deletion failure", async () => {
     const spy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
     mockedDelete.mockRejectedValue(new Error("500"))
-    const { onDeleted } = setup({ selectedProvider: "changelog" })
+    const { onDeleted } = await setup({ selectedProvider: "changelog" })
     await waitFor(() => expect(screen.getByTestId("icon-Trash2")).toBeTruthy())
 
-    pressDelete()
+    await pressDelete()
     await confirmAlert(spy)
 
     expect(onDeleted).not.toHaveBeenCalled()

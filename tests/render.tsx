@@ -23,12 +23,12 @@ function makeProviders(lang: Language) {
 }
 
 /** Renders a component wrapped in the theme + language providers (French by default). */
-export function renderWithProviders(
+export async function renderWithProviders(
   ui: ReactElement,
   options?: RenderOptions & { lang?: Language },
 ) {
   const { lang, ...rest } = options ?? {}
-  return render(ui, { wrapper: lang ? makeProviders(lang) : Providers, ...rest })
+  return await render(ui, { wrapper: lang ? makeProviders(lang) : Providers, ...rest })
 }
 
 export { Providers }

@@ -34,10 +34,13 @@ export default function FeedScreen() {
   const auth = useAuth()
   const { t, lang } = useLanguage()
   // The API rejected the token: sign out and go back to the login screen.
+  // Depend on the stable `logout`, not on `auth` (a new object every render),
+  // otherwise useFeed's load effect re-runs after each render and refetches forever.
+  const { logout } = auth
   const handleAuthError = useCallback(async () => {
-    await auth.logout()
+    await logout()
     router.replace("/(auth)/login")
-  }, [auth, router])
+  }, [logout, router])
   const { fluxes, connectors, templates, loading, error, refresh } = useFeed(
     auth.token,
     handleAuthError,

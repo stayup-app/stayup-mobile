@@ -16,7 +16,7 @@ beforeEach(() => {
 
 describe("useAuthConfig", () => {
   it("reads the API config on mount", async () => {
-    const { result } = renderHook(() => useAuthConfig())
+    const { result } = await renderHook(() => useAuthConfig())
 
     await waitFor(() => expect(result.current.config).not.toBeNull())
     expect(result.current.config?.oauth).toEqual({ github: true, google: false })
@@ -25,7 +25,7 @@ describe("useAuthConfig", () => {
 
   it("leaves config null when the API has no /auth/config", async () => {
     mockedFetch.mockResolvedValue(null)
-    const { result } = renderHook(() => useAuthConfig())
+    const { result } = await renderHook(() => useAuthConfig())
 
     await waitFor(() => expect(mockedFetch).toHaveBeenCalled())
     expect(result.current.config).toBeNull()

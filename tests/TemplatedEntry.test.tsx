@@ -31,13 +31,13 @@ const noListTpl: ProviderTemplate = {
   item: { parseContentAsJson: true, fields: { title: "title" } },
 }
 
-function renderEntry(
+async function renderEntry(
   template: ProviderTemplate,
   content: Record<string, unknown>,
   onPress?: () => void,
   extra: Record<string, unknown> = {},
 ) {
-  return render(
+  return await render(
     <TemplatedEntry
       template={template}
       item={{ content: JSON.stringify(content), ...extra }}
@@ -48,9 +48,9 @@ function renderEntry(
 }
 
 describe("row layout", () => {
-  it("shows title, subtitle, date and a clipped snippet, and is pressable", () => {
+  it("shows title, subtitle, date and a clipped snippet, and is pressable", async () => {
     const onPress = jest.fn()
-    renderEntry(
+    await renderEntry(
       rowTpl,
       { title: "Hello", sub: "a source", body: "x".repeat(300), ts: "2024-06-15T14:30:00Z" },
       onPress,
@@ -58,19 +58,19 @@ describe("row layout", () => {
     expect(screen.getByText("Hello")).toBeTruthy()
     expect(screen.getByText("a source")).toBeTruthy()
     expect(screen.getByText("x".repeat(200))).toBeTruthy()
-    fireEvent.press(screen.getByText("Hello"))
+    await fireEvent.press(screen.getByText("Hello"))
     expect(onPress).toHaveBeenCalled()
   })
 
-  it("falls back to a dash and hides date / subtitle / snippet when the entry is bare", () => {
-    renderEntry(rowTpl, {})
+  it("falls back to a dash and hides date / subtitle / snippet when the entry is bare", async () => {
+    await renderEntry(rowTpl, {})
     expect(screen.getByText("—")).toBeTruthy()
   })
 })
 
 describe("media layout", () => {
-  it("renders the thumbnail and the date", () => {
-    renderEntry(mediaTpl, {
+  it("renders the thumbnail and the date", async () => {
+    await renderEntry(mediaTpl, {
       title: "Clip",
       sub: "chan",
       img: "https://img.test/t.jpg",
@@ -80,15 +80,15 @@ describe("media layout", () => {
     expect(screen.getByText("chan")).toBeTruthy()
   })
 
-  it("shows the placeholder glyph when there is no image and no date", () => {
-    renderEntry(mediaTpl, { title: "Clip" })
+  it("shows the placeholder glyph when there is no image and no date", async () => {
+    await renderEntry(mediaTpl, { title: "Clip" })
     expect(screen.getByText("▶")).toBeTruthy()
   })
 })
 
 describe("default layout", () => {
-  it("uses the row layout when the template declares no list block", () => {
-    renderEntry(noListTpl, { title: "Rowish" })
+  it("uses the row layout when the template declares no list block", async () => {
+    await renderEntry(noListTpl, { title: "Rowish" })
     expect(screen.getByText("Rowish")).toBeTruthy()
   })
 })

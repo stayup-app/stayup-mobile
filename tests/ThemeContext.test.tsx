@@ -29,8 +29,8 @@ function Probe() {
   )
 }
 
-function renderProbe() {
-  return render(
+async function renderProbe() {
+  return await render(
     <ThemeProvider>
       <Probe />
     </ThemeProvider>,
@@ -44,7 +44,7 @@ beforeEach(() => {
 
 describe("ThemeProvider", () => {
   it("falls back to the system scheme when nothing is stored", async () => {
-    renderProbe()
+    await renderProbe()
 
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("light"))
     expect(nativewind.set).toHaveBeenCalledWith("light")
@@ -52,7 +52,7 @@ describe("ThemeProvider", () => {
 
   it("follows a dark system scheme", async () => {
     mockedUseColorScheme.mockReturnValue("dark")
-    renderProbe()
+    await renderProbe()
 
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("dark"))
     expect(nativewind.set).toHaveBeenCalledWith("dark")
@@ -60,7 +60,7 @@ describe("ThemeProvider", () => {
 
   it("restores the stored theme over the system scheme", async () => {
     asyncStorage.getItem.mockResolvedValue("dark")
-    renderProbe()
+    await renderProbe()
 
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("dark"))
     expect(nativewind.set).toHaveBeenCalledWith("dark")
@@ -68,38 +68,38 @@ describe("ThemeProvider", () => {
 
   it("ignores a malformed stored value", async () => {
     asyncStorage.getItem.mockResolvedValue("purple")
-    renderProbe()
+    await renderProbe()
 
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("light"))
   })
 
   it("setTheme persists the choice", async () => {
-    renderProbe()
+    await renderProbe()
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("light"))
 
-    fireEvent.press(screen.getByTestId("set-dark"))
+    await fireEvent.press(screen.getByTestId("set-dark"))
 
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("dark"))
     expect(asyncStorage.setItem).toHaveBeenCalledWith("theme", "dark")
   })
 
   it("toggleTheme flips light to dark and back", async () => {
-    renderProbe()
+    await renderProbe()
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("light"))
 
-    fireEvent.press(screen.getByTestId("toggle"))
+    await fireEvent.press(screen.getByTestId("toggle"))
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("dark"))
 
-    fireEvent.press(screen.getByTestId("toggle"))
+    await fireEvent.press(screen.getByTestId("toggle"))
     await waitFor(() => expect(screen.getByTestId("theme")).toHaveTextContent("light"))
     expect(asyncStorage.setItem).toHaveBeenLastCalledWith("theme", "light")
   })
 })
 
 describe("useTheme", () => {
-  it("throws when used outside of a provider", () => {
+  it("throws when used outside of a provider", async () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {})
-    expect(() => render(<Probe />)).toThrow("useTheme must be used within ThemeProvider")
+    await expect(render(<Probe />)).rejects.toThrow("useTheme must be used within ThemeProvider")
     spy.mockRestore()
   })
 })

@@ -34,7 +34,7 @@ const mockedReadToken = readToken as jest.Mock
 function wrapper({ children }: { children: React.ReactNode }) {
   return <LanguageProvider>{children}</LanguageProvider>
 }
-const renderAuth = () => renderHook(() => useAuth(), { wrapper })
+const renderAuth = async () => await renderHook(() => useAuth(), { wrapper })
 
 function makeToken(overrides: Record<string, unknown> = {}): string {
   const payload = {
@@ -58,7 +58,7 @@ beforeEach(() => {
 describe("initial restore", () => {
   it("restores the session from the stored token", async () => {
     mockedReadToken.mockResolvedValue(validToken)
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.session).toMatchObject({ userId: "user-1", email: "jean@example.com" })
     expect(result.current.token).toBe(validToken)
@@ -66,13 +66,13 @@ describe("initial restore", () => {
 
   it("ignores an expired stored token", async () => {
     mockedReadToken.mockResolvedValue(expiredToken)
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.session).toBeNull()
   })
 
   it("stays signed out with no stored token", async () => {
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.session).toBeNull()
     expect(result.current.token).toBeNull()
@@ -82,7 +82,7 @@ describe("initial restore", () => {
 describe("login", () => {
   it("stores the token and exposes the session", async () => {
     mockedLogin.mockResolvedValue(validToken)
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(() => result.current.login("jean@example.com", "pw"))
@@ -95,7 +95,7 @@ describe("login", () => {
 
   it("translates a 401", async () => {
     mockedLogin.mockRejectedValue(new ApiError(401, "Login failed: 401"))
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
     await act(() => result.current.login("a@b.c", "x"))
     expect(result.current.error).toBe(en.errors.invalidCredentials)
@@ -104,7 +104,7 @@ describe("login", () => {
 
   it("falls back to a generic message otherwise", async () => {
     mockedLogin.mockRejectedValue("boom")
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
     await act(() => result.current.login("a@b.c", "x"))
     expect(result.current.error).toBe(en.errors.serverError)
@@ -114,7 +114,7 @@ describe("login", () => {
 describe("register", () => {
   it("stores the token and exposes the session", async () => {
     mockedRegister.mockResolvedValue(validToken)
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(() => result.current.register("Jean", "jean@example.com", "pw"))
@@ -126,7 +126,7 @@ describe("register", () => {
 
   it("translates a 409 into the taken-email message", async () => {
     mockedRegister.mockRejectedValue(new ApiError(409, "Register failed: 409"))
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
     await act(() => result.current.register("Jean", "jean@example.com", "pw"))
     expect(result.current.error).toBe(en.errors.emailTaken)
@@ -139,7 +139,7 @@ describe("OAuth", () => {
       type: "success",
       url: `stayup://auth/callback?token=${validToken}`,
     })
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(() => result.current.loginOAuth("github"))
@@ -150,7 +150,7 @@ describe("OAuth", () => {
 
   it("does nothing (no error) when the auth session is cancelled", async () => {
     webBrowser.openAuthSessionAsync.mockResolvedValue({ type: "cancel" })
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
     await act(() => result.current.loginOAuth("google"))
     expect(result.current.error).toBeNull()
@@ -161,7 +161,7 @@ describe("OAuth", () => {
 describe("logout", () => {
   it("clears the stored token and drops the session", async () => {
     mockedReadToken.mockResolvedValue(validToken)
-    const { result } = renderAuth()
+    const { result } = await renderAuth()
     await waitFor(() => expect(result.current.session).not.toBeNull())
     await act(() => result.current.logout())
     expect(clearToken).toHaveBeenCalled()

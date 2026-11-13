@@ -5,7 +5,6 @@
  * a gallery image, malformed `openUrl`, the HTML-to-text fallback.
  */
 import { Linking } from "react-native"
-import { Image } from "expo-image"
 import { render, screen, fireEvent } from "@testing-library/react-native"
 import { TemplatedDetail } from "@/components/feed/TemplatedDetail"
 import type { ProviderTemplate } from "@/lib/providerTemplate"
@@ -17,12 +16,12 @@ beforeEach(() => {
   openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never)
 })
 
-function renderDetail(
+async function renderDetail(
   template: ProviderTemplate,
   item: Record<string, unknown>,
   source?: Record<string, unknown>,
 ) {
-  return render(
+  return await render(
     <TemplatedDetail
       template={template}
       item={item}
@@ -50,8 +49,8 @@ describe("text & html modes", () => {
     item: { fields: { timestamp: "$row.datetime" } },
   }
 
-  it("renders header, body and the open button", () => {
-    renderDetail(text, {
+  it("renders header, body and the open button", async () => {
+    await renderDetail(text, {
       title: "A title",
       badge: "v1",
       subtitle: "sub",
@@ -62,51 +61,51 @@ describe("text & html modes", () => {
     expect(screen.getByText("A title")).toBeTruthy()
     expect(screen.getByText("v1")).toBeTruthy()
     expect(screen.getByText("sub")).toBeTruthy()
-    fireEvent.press(screen.getByText("Open it"))
+    await fireEvent.press(screen.getByText("Open it"))
     expect(openURL).toHaveBeenCalledWith("https://example.com/a")
   })
 
-  it("drops the body and open button when both are blank, and falls back to item.datetime", () => {
+  it("drops the body and open button when both are blank, and falls back to item.datetime", async () => {
     const t: ProviderTemplate = {
       version: 1,
       detail: { mode: "text", title: "title", body: "body", openUrl: "link" },
       item: { fields: {} },
     }
-    renderDetail(t, { title: "Bare", datetime: "2024-06-15T14:30:00Z" })
+    await renderDetail(t, { title: "Bare", datetime: "2024-06-15T14:30:00Z" })
     expect(screen.getByText("Bare")).toBeTruthy()
     expect(screen.queryByText(fr.viewer.openLink)).toBeNull()
   })
 
-  it("hides the open button for a non-http url, a //-path or a non-url", () => {
-    renderDetail(text, { title: "T1", body: "B", link: "ftp://nope/x" })
+  it("hides the open button for a non-http url, a //-path or a non-url", async () => {
+    await renderDetail(text, { title: "T1", body: "B", link: "ftp://nope/x" })
     expect(screen.queryByText("Open it")).toBeNull()
-    renderDetail(text, { title: "T2", body: "B", link: "https://host//evil" })
+    await renderDetail(text, { title: "T2", body: "B", link: "https://host//evil" })
     expect(screen.queryByText("Open it")).toBeNull()
-    renderDetail(text, { title: "T3", body: "B", link: "not a url" })
+    await renderDetail(text, { title: "T3", body: "B", link: "not a url" })
     expect(screen.queryByText("Open it")).toBeNull()
   })
 
-  it("reduces an HTML body to plain text", () => {
+  it("reduces an HTML body to plain text", async () => {
     const t: ProviderTemplate = {
       version: 1,
       detail: { mode: "html", title: "title", body: "body" },
     }
-    renderDetail(t, {
+    await renderDetail(t, {
       title: "Post",
       body: "<p>Hello <strong>world</strong> &amp; more &lt;x&gt;</p>",
     })
     expect(screen.getByText("Hello world & more <x>")).toBeTruthy()
   })
 
-  it("reads the body from item.fields.summary when detail omits it", () => {
+  it("reads the body from item.fields.summary when detail omits it", async () => {
     const t: ProviderTemplate = { version: 1, item: { fields: { summary: "desc" } } }
-    renderDetail(t, { desc: "From fields" })
+    await renderDetail(t, { desc: "From fields" })
     expect(screen.getByText("From fields")).toBeTruthy()
   })
 })
 
 describe("media & audio modes", () => {
-  it("shows the media image and reads it from item.fields as a fallback", () => {
+  it("shows the media image and reads it from item.fields as a fallback", async () => {
     const withDetail: ProviderTemplate = {
       version: 1,
       detail: {
@@ -117,13 +116,13 @@ describe("media & audio modes", () => {
         openLabel: "Watch",
       },
     }
-    const a = renderDetail(withDetail, {
+    const a = await renderDetail(withDetail, {
       title: "V",
       image: "https://img.test/1.jpg",
       link: "https://example.com/v",
     })
-    expect(a.UNSAFE_getAllByType(Image).length).toBeGreaterThan(0)
-    fireEvent.press(screen.getByText("Watch"))
+    expect(a.container.queryAll((n) => n.type === "Image").length).toBeGreaterThan(0)
+    await fireEvent.press(screen.getByText("Watch"))
     expect(openURL).toHaveBeenCalledWith("https://example.com/v")
 
     const fromFields: ProviderTemplate = {
@@ -131,36 +130,36 @@ describe("media & audio modes", () => {
       detail: { mode: "media", title: "title" },
       item: { fields: { image: "image" } },
     }
-    const b = renderDetail(fromFields, { title: "V2", image: "https://img.test/2.jpg" })
-    expect(b.UNSAFE_getAllByType(Image).length).toBeGreaterThan(0)
+    const b = await renderDetail(fromFields, { title: "V2", image: "https://img.test/2.jpg" })
+    expect(b.container.queryAll((n) => n.type === "Image").length).toBeGreaterThan(0)
   })
 
-  it("renders nothing extra when the media payload has no image", () => {
+  it("renders nothing extra when the media payload has no image", async () => {
     const t: ProviderTemplate = { version: 1, detail: { mode: "media", title: "title" } }
-    renderDetail(t, { title: "V" })
+    await renderDetail(t, { title: "V" })
     expect(screen.getByText("V")).toBeTruthy()
   })
 
-  it("renders the audio cover + notes, reading both from item.fields when needed", () => {
+  it("renders the audio cover + notes, reading both from item.fields when needed", async () => {
     const t: ProviderTemplate = {
       version: 1,
       detail: { mode: "audio", title: "title", openUrl: "page", openLabel: "Open episode" },
       item: { fields: { image: "cover", summary: "notes" } },
     }
-    renderDetail(t, {
+    await renderDetail(t, {
       title: "Ep",
       cover: "https://cdn.test/c.jpg",
       notes: "Show notes",
       page: "https://pod.test/1",
     })
     expect(screen.getByText("Show notes")).toBeTruthy()
-    fireEvent.press(screen.getByText("Open episode"))
+    await fireEvent.press(screen.getByText("Open episode"))
     expect(openURL).toHaveBeenCalledWith("https://pod.test/1")
   })
 
-  it("drops every audio block when the payload is bare", () => {
+  it("drops every audio block when the payload is bare", async () => {
     const t: ProviderTemplate = { version: 1, detail: { mode: "audio", title: "title" } }
-    renderDetail(t, { title: "Bare" })
+    await renderDetail(t, { title: "Bare" })
     expect(screen.getByText("Bare")).toBeTruthy()
   })
 })
@@ -185,8 +184,8 @@ describe("table mode", () => {
     },
   }
 
-  it("renders a row per entry, a prefixed formatted cell, and opens the row link", () => {
-    renderDetail(template, {
+  it("renders a row per entry, a prefixed formatted cell, and opens the row link", async () => {
+    await renderDetail(template, {
       title: "Trending",
       repos: [
         {
@@ -210,22 +209,22 @@ describe("table mode", () => {
     })
     expect(screen.getByText("+42")).toBeTruthy()
     expect(screen.getByText("vercel/next.js")).toBeTruthy()
-    fireEvent.press(screen.getByText("vercel/next.js"))
+    await fireEvent.press(screen.getByText("vercel/next.js"))
     expect(openURL).toHaveBeenCalledWith("https://github.com/vercel/next.js")
-    fireEvent.press(screen.getByText("Open list"))
+    await fireEvent.press(screen.getByText("Open list"))
     expect(openURL).toHaveBeenCalledWith("https://github.com/trending")
   })
 
-  it("tolerates a table with no columns and a missing collection", () => {
-    renderDetail(
+  it("tolerates a table with no columns and a missing collection", async () => {
+    await renderDetail(
       { version: 1, detail: { mode: "table", title: "title", collection: "nope" } },
       { title: "Empty" },
     )
     expect(screen.getByText("Empty")).toBeTruthy()
   })
 
-  it("renders rows with no columns and no row link without crashing", () => {
-    renderDetail(
+  it("renders rows with no columns and no row link without crashing", async () => {
+    await renderDetail(
       { version: 1, detail: { mode: "table", title: "title", collection: "repos" } },
       { title: "Bare", repos: [{ name: "a" }, { name: "b" }] },
     )
@@ -245,34 +244,34 @@ describe("link-list mode", () => {
     },
   }
 
-  it("renders a labelled link per row and opens it on press", () => {
-    renderDetail(template, {
+  it("renders a labelled link per row and opens it on press", async () => {
+    await renderDetail(template, {
       title: "Bookmarks",
       links: [
         { name: "First", href: "https://a.test/1" },
         { name: "Second", href: "https://b.test/2" },
       ],
     })
-    fireEvent.press(screen.getByText("First"))
+    await fireEvent.press(screen.getByText("First"))
     expect(openURL).toHaveBeenCalledWith("https://a.test/1")
   })
 
-  it("shows the href as the label when a row has no name", () => {
-    renderDetail(template, { title: "Bookmarks", links: [{ href: "https://only.test/x" }] })
+  it("shows the href as the label when a row has no name", async () => {
+    await renderDetail(template, { title: "Bookmarks", links: [{ href: "https://only.test/x" }] })
     expect(screen.getByText("https://only.test/x")).toBeTruthy()
   })
 
-  it("defaults the row label to `title` when no columns are given", () => {
-    renderDetail(
+  it("defaults the row label to `title` when no columns are given", async () => {
+    await renderDetail(
       { version: 1, detail: { mode: "link-list", collection: "links", rowLink: "url" } },
       { links: [{ title: "Defaulted", url: "https://d.test/1" }] },
     )
-    fireEvent.press(screen.getByText("Defaulted"))
+    await fireEvent.press(screen.getByText("Defaulted"))
     expect(openURL).toHaveBeenCalledWith("https://d.test/1")
   })
 
-  it("renders a plain, unpressable row when there is no row link", () => {
-    renderDetail(template, { title: "Bookmarks", links: [{ name: "no link" }] })
+  it("renders a plain, unpressable row when there is no row link", async () => {
+    await renderDetail(template, { title: "Bookmarks", links: [{ name: "no link" }] })
     expect(screen.getByText("no link")).toBeTruthy()
   })
 })
@@ -290,8 +289,8 @@ describe("gallery mode", () => {
     },
   }
 
-  it("opens a linked image on press, shows its caption and the album open button", () => {
-    renderDetail(
+  it("opens a linked image on press, shows its caption and the album open button", async () => {
+    await renderDetail(
       {
         version: 1,
         detail: {
@@ -312,22 +311,22 @@ describe("gallery mode", () => {
       },
     )
     expect(screen.getByText("One")).toBeTruthy()
-    fireEvent.press(screen.getByText("One"))
+    await fireEvent.press(screen.getByText("One"))
     expect(openURL).toHaveBeenCalledWith("https://page.test/1")
-    fireEvent.press(screen.getByText("Open album"))
+    await fireEvent.press(screen.getByText("Open album"))
     expect(openURL).toHaveBeenCalledWith("https://page.test")
   })
 
-  it("skips an entry with no image source and renders a bare image otherwise", () => {
-    renderDetail(template, {
+  it("skips an entry with no image source and renders a bare image otherwise", async () => {
+    await renderDetail(template, {
       title: "Trip",
       shots: [{ caption: "no image" }, { url: "https://cdn.test/2.jpg" }],
     })
     expect(screen.queryByText("no image")).toBeNull()
   })
 
-  it("defaults to $self for a collection of bare URL strings", () => {
-    renderDetail(
+  it("defaults to $self for a collection of bare URL strings", async () => {
+    await renderDetail(
       { version: 1, detail: { mode: "gallery", title: "title", collection: "shots" } },
       { title: "Trip", shots: ["https://cdn.test/3.jpg"] },
     )

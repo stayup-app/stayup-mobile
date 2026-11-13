@@ -53,9 +53,16 @@ describe("useFeed", () => {
       },
     })
 
-    const { result } = renderHook(() => useFeed(token, onAuthError))
+    // Hold the request open so the loading state can be observed: the async
+    // render would otherwise flush past it.
+    const feed = await mockedGetUserFeed.getMockImplementation()?.()
+    let release: (value: unknown) => void = () => {}
+    mockedGetUserFeed.mockReturnValueOnce(new Promise((resolve) => (release = resolve)))
+
+    const { result } = await renderHook(() => useFeed(token, onAuthError))
 
     expect(result.current.loading).toBe(true)
+    release(feed)
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(mockedGetUserFeed).toHaveBeenCalledWith("user-1", token)
     expect(result.current.fluxes).toEqual([
@@ -70,7 +77,7 @@ describe("useFeed", () => {
   })
 
   it("renders with the bundled provider templates", async () => {
-    const { result } = renderHook(() => useFeed(token, onAuthError))
+    const { result } = await renderHook(() => useFeed(token, onAuthError))
 
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(Object.keys(result.current.templates).sort()).toEqual([
@@ -87,14 +94,14 @@ describe("useFeed", () => {
 
   it("signs the user out when the API rejects the token", async () => {
     mockedGetUserFeed.mockRejectedValue(new ApiError(401, "Unauthorized"))
-    renderHook(() => useFeed(token, onAuthError))
+    await renderHook(() => useFeed(token, onAuthError))
 
     await waitFor(() => expect(onAuthError).toHaveBeenCalledTimes(1))
   })
 
   it("reports an error for any other failure", async () => {
     mockedGetUserFeed.mockRejectedValue(new Error("down"))
-    const { result } = renderHook(() => useFeed(token, onAuthError))
+    const { result } = await renderHook(() => useFeed(token, onAuthError))
 
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.error).toBe("Erreur de chargement.")
@@ -106,14 +113,14 @@ describe("useFeed", () => {
       repositories: [{ id: "l9", repository_id: 9, url: "https://x.dev", provider: "custom" }],
     })
 
-    const { result } = renderHook(() => useFeed(token, onAuthError))
+    const { result } = await renderHook(() => useFeed(token, onAuthError))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.connectors).toEqual({})
     expect(result.current.fluxes[0]).toMatchObject({ id: "l9" })
   })
 
   it("waits for a token before loading", async () => {
-    const { result } = renderHook(() => useFeed(null, onAuthError))
+    const { result } = await renderHook(() => useFeed(null, onAuthError))
 
     await act(async () => {})
     expect(mockedGetUserFeed).not.toHaveBeenCalled()
@@ -121,7 +128,7 @@ describe("useFeed", () => {
   })
 
   it("refetches on refresh", async () => {
-    const { result } = renderHook(() => useFeed(token, onAuthError))
+    const { result } = await renderHook(() => useFeed(token, onAuthError))
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {

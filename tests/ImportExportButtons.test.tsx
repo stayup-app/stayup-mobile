@@ -50,9 +50,9 @@ function flux(overrides: Partial<FeedFlux> = {}): FeedFlux {
   }
 }
 
-function setup(fluxes: FeedFlux[] = []) {
+async function setup(fluxes: FeedFlux[] = []) {
   const onImported = jest.fn()
-  renderWithProviders(
+  await renderWithProviders(
     <ImportExportButtons fluxes={fluxes} userId="user-1" onImported={onImported} />,
   )
   return { onImported }
@@ -67,9 +67,11 @@ beforeEach(() => {
 
 describe("export", () => {
   it("writes and shares the OPML file", async () => {
-    setup([flux()])
+    await setup([flux()])
 
-    fireEvent.press(screen.getByLabelText("Exporter les flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Exporter les flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() => expect(mockFileWrite).toHaveBeenCalled())
     expect(mockFileWrite.mock.calls[0][0]).toContain('xmlUrl="https://github.com/facebook/react/"')
@@ -79,9 +81,11 @@ describe("export", () => {
 
   it("does not share when sharing is unavailable", async () => {
     mockedIsAvailable.mockResolvedValue(false)
-    setup([flux()])
+    await setup([flux()])
 
-    fireEvent.press(screen.getByLabelText("Exporter les flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Exporter les flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() => expect(mockFileWrite).toHaveBeenCalled())
     expect(mockedShare).not.toHaveBeenCalled()
@@ -91,9 +95,11 @@ describe("export", () => {
 describe("import", () => {
   it("does nothing when the picker is cancelled", async () => {
     mockedGetDocument.mockResolvedValue({ canceled: true, assets: null })
-    setup([])
+    await setup([])
 
-    fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Importer des flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() => expect(mockedGetDocument).toHaveBeenCalled())
     expect(mockedAdd).not.toHaveBeenCalled()
@@ -112,9 +118,11 @@ describe("import", () => {
       ),
     )
     mockedAdd.mockResolvedValue(undefined)
-    const { onImported } = setup([])
+    const { onImported } = await setup([])
 
-    fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Importer des flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() => expect(mockedAdd).toHaveBeenCalled())
     expect(mockedAdd).toHaveBeenCalledWith("user-1", "token-1", {
@@ -144,9 +152,11 @@ describe("import", () => {
         "StayUp",
       ),
     )
-    const { onImported } = setup([flux()])
+    const { onImported } = await setup([flux()])
 
-    fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Importer des flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith("Importer des flux", "1 déjà présent(s)"),
@@ -174,9 +184,11 @@ describe("import", () => {
       ),
     )
     mockedGetFluxes.mockResolvedValue([])
-    setup([])
+    await setup([])
 
-    fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Importer des flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith("Importer des flux", "1 indisponible(s)"),
@@ -211,9 +223,11 @@ describe("import", () => {
         is_subscribed: false,
       },
     ])
-    setup([])
+    await setup([])
 
-    fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Importer des flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("scrap", 7, "token-1"))
     expect(alertSpy).toHaveBeenCalledWith("Importer des flux", "1 ajouté(s)")
@@ -226,9 +240,11 @@ describe("import", () => {
       assets: [{ uri: "file:///picked.opml", name: "picked.opml", lastModified: 0 }],
     })
     mockFileText.mockResolvedValue("not opml")
-    setup([])
+    await setup([])
 
-    fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByLabelText("Importer des flux"), {
+      stopPropagation: jest.fn(),
+    })
 
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith(

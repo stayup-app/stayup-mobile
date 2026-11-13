@@ -134,7 +134,7 @@ beforeEach(() => {
 describe("FeedScreen — server sync", () => {
   it("syncs the read state with the signed-in user", async () => {
     ;(getItemState as jest.Mock).mockResolvedValue({ read: ["rss:1"], saved: ["rss:2"] })
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(getItemState).toHaveBeenCalledWith("user-1", expect.any(String)))
     await waitFor(() => expect(useReadItemsStore.getState().readIds.has("rss:1")).toBe(true))
@@ -147,10 +147,10 @@ describe("FeedScreen — saved items", () => {
     ;(listSavedItems as jest.Mock).mockResolvedValue([
       { ...rssItem(3, 10, "Saved one"), provider: "rss" },
     ])
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Enregistrés"))
+    await fireEvent.press(screen.getByText("Enregistrés"))
 
     await waitFor(() => expect(screen.getByText("Saved one")).toBeTruthy())
     expect(screen.queryByText("Article A")).toBeNull()
@@ -159,10 +159,10 @@ describe("FeedScreen — saved items", () => {
 
   it("shows nothing when the saved items cannot be loaded", async () => {
     ;(listSavedItems as jest.Mock).mockRejectedValue(new Error("down"))
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Enregistrés"))
+    await fireEvent.press(screen.getByText("Enregistrés"))
 
     await waitFor(() => expect(screen.queryByText("Article A")).toBeNull())
   })
@@ -173,24 +173,24 @@ describe("FeedScreen — search", () => {
     ;(searchItems as jest.Mock).mockResolvedValue([
       { ...rssItem(4, 10, "Found it"), provider: "rss" },
     ])
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.changeText(screen.getByLabelText("Rechercher…"), " rel ")
+    await fireEvent.changeText(screen.getByLabelText("Rechercher…"), " rel ")
 
     await waitFor(() => expect(screen.getByText("Found it")).toBeTruthy())
     expect(searchItems).toHaveBeenCalledWith("user-1", "rel", expect.any(String))
     expect(screen.queryByText("Article A")).toBeNull()
 
-    fireEvent.press(screen.getByLabelText("Effacer la recherche"))
+    await fireEvent.press(screen.getByLabelText("Effacer la recherche"))
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
   })
 
   it("does not search for a single character", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.changeText(screen.getByLabelText("Rechercher…"), "r")
+    await fireEvent.changeText(screen.getByLabelText("Rechercher…"), "r")
     await new Promise((r) => setTimeout(r, 400))
 
     expect(searchItems).not.toHaveBeenCalled()
@@ -199,10 +199,10 @@ describe("FeedScreen — search", () => {
 
   it("shows nothing when the search fails", async () => {
     ;(searchItems as jest.Mock).mockRejectedValue(new Error("down"))
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.changeText(screen.getByLabelText("Rechercher…"), "rel")
+    await fireEvent.changeText(screen.getByLabelText("Rechercher…"), "rel")
 
     await waitFor(() => expect(screen.queryByText("Article A")).toBeNull())
   })
@@ -211,12 +211,12 @@ describe("FeedScreen — search", () => {
     ;(searchItems as jest.Mock).mockResolvedValue([
       { ...rssItem(4, 10, "Found it"), provider: "rss" },
     ])
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
     useReadItemsStore.setState({ readIds: new Set(["rss:4"]) })
-    fireEvent.press(screen.getByText("Non lu"))
+    await fireEvent.press(screen.getByText("Non lu"))
 
-    fireEvent.changeText(screen.getByLabelText("Rechercher…"), "rel")
+    await fireEvent.changeText(screen.getByLabelText("Rechercher…"), "rel")
 
     await waitFor(() => expect(screen.getByText("Found it")).toBeTruthy())
   })
@@ -224,38 +224,41 @@ describe("FeedScreen — search", () => {
 
 describe("FeedScreen — folders", () => {
   it("filters the feed to the flux of a folder, and back", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("AI"))
+    await fireEvent.press(screen.getByText("AI"))
     await waitFor(() => expect(screen.queryByText("Article B")).toBeNull())
     expect(screen.getByText("Article A")).toBeTruthy()
 
-    fireEvent.press(screen.getByText("AI"))
+    await fireEvent.press(screen.getByText("AI"))
     await waitFor(() => expect(screen.getByText("Article B")).toBeTruthy())
   })
 
   it("leaves the folder when a provider is picked, and the provider when a folder is", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("AI"))
-    fireEvent.press(screen.getByText("RSS"))
+    await fireEvent.press(screen.getByText("AI"))
+    await fireEvent.press(screen.getByText("RSS"))
     await waitFor(() => expect(screen.getByText("Article B")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("AI"))
+    await fireEvent.press(screen.getByText("AI"))
     await waitFor(() => expect(screen.queryByText("Article B")).toBeNull())
   })
 
   it("moves a flux into a folder from its chip", async () => {
     setFeed([repo("l1", 10), repo("l2", 11)])
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("RSS"))
-    fireEvent.press(screen.getAllByLabelText("Déplacer dans un dossier")[0])
-    fireEvent.changeText(screen.getByLabelText("Nom du dossier (vide pour retirer)"), " Security ")
-    fireEvent.press(screen.getByText("Enregistrer"))
+    await fireEvent.press(screen.getByText("RSS"))
+    await fireEvent.press(screen.getAllByLabelText("Déplacer dans un dossier")[0])
+    await fireEvent.changeText(
+      screen.getByLabelText("Nom du dossier (vide pour retirer)"),
+      " Security ",
+    )
+    await fireEvent.press(screen.getByText("Enregistrer"))
 
     await waitFor(() =>
       expect(setRepositoryFolder).toHaveBeenCalledWith(
@@ -278,68 +281,68 @@ describe("FolderSheet", () => {
     folder: "AI",
   }
 
-  function sheet(over: Partial<React.ComponentProps<typeof FolderSheet>> = {}) {
+  async function sheet(over: Partial<React.ComponentProps<typeof FolderSheet>> = {}) {
     const props = { onClose: jest.fn(), onSaved: jest.fn() }
-    renderWithProviders(
+    await renderWithProviders(
       <FolderSheet flux={flux} userId="user-1" token="jwt" {...props} {...over} />,
     )
     return props
   }
 
   it("starts from the current folder and clears it when the name is emptied", async () => {
-    const { onSaved, onClose } = sheet()
+    const { onSaved, onClose } = await sheet()
     const input = screen.getByLabelText("Nom du dossier (vide pour retirer)")
     expect(input.props.value).toBe("AI")
 
-    fireEvent.changeText(input, "")
-    fireEvent.press(screen.getByText("Enregistrer"))
+    await fireEvent.changeText(input, "")
+    await fireEvent.press(screen.getByText("Enregistrer"))
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled())
     expect(setRepositoryFolder).toHaveBeenCalledWith("user-1", "l1", null, "jwt")
     expect(onClose).toHaveBeenCalled()
   })
 
-  it("starts empty for a flux without folder", () => {
-    sheet({ flux: { ...flux, folder: undefined } })
+  it("starts empty for a flux without folder", async () => {
+    await sheet({ flux: { ...flux, folder: undefined } })
     expect(screen.getByLabelText("Nom du dossier (vide pour retirer)").props.value).toBe("")
   })
 
   it("shows an error and stays open when the API refuses", async () => {
     ;(setRepositoryFolder as jest.Mock).mockRejectedValue(new Error("500"))
-    const { onClose, onSaved } = sheet()
+    const { onClose, onSaved } = await sheet()
 
-    fireEvent.press(screen.getByText("Enregistrer"))
+    await fireEvent.press(screen.getByText("Enregistrer"))
 
     await waitFor(() => expect(screen.getByText("Une erreur est survenue.")).toBeTruthy())
     expect(onClose).not.toHaveBeenCalled()
     expect(onSaved).not.toHaveBeenCalled()
   })
 
-  it("stays open when the sheet itself is pressed", () => {
-    const { onClose } = sheet()
+  it("stays open when the sheet itself is pressed", async () => {
+    const { onClose } = await sheet()
     const stopPropagation = jest.fn()
 
-    fireEvent.press(screen.getByText("Déplacer dans un dossier"), { stopPropagation })
+    await fireEvent.press(screen.getByText("Déplacer dans un dossier"), { stopPropagation })
 
     expect(stopPropagation).toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it("closes without saving", () => {
-    const { onClose } = sheet()
-    fireEvent.press(screen.getByText("Annuler"))
+  it("closes without saving", async () => {
+    const { onClose } = await sheet()
+    await fireEvent.press(screen.getByText("Annuler"))
     expect(onClose).toHaveBeenCalled()
     expect(setRepositoryFolder).not.toHaveBeenCalled()
   })
 
-  it("renders nothing and does nothing without a flux", () => {
-    sheet({ flux: null })
+  it("renders nothing and does nothing without a flux", async () => {
+    await sheet({ flux: null })
     expect(screen.queryByText("Enregistrer")).toBeNull()
   })
 
   it("ignores a save pressed with no flux", async () => {
     // The only way to reach handleSave without a flux is a stale press on a closing sheet.
-    const { rerender } = renderWithProviders(
+    const { rerender } = await renderWithProviders(
       <FolderSheet
         flux={flux}
         userId="user-1"
@@ -349,7 +352,7 @@ describe("FolderSheet", () => {
       />,
     )
     const press = screen.getByText("Enregistrer")
-    rerender(
+    await rerender(
       <FolderSheet
         flux={null}
         userId="user-1"
@@ -358,7 +361,7 @@ describe("FolderSheet", () => {
         onSaved={jest.fn()}
       />,
     )
-    fireEvent.press(press)
+    await fireEvent.press(press)
     expect(setRepositoryFolder).not.toHaveBeenCalled()
   })
 })
@@ -391,13 +394,13 @@ describe("FeedFluxList — folder chips", () => {
     },
   ]
 
-  function list(over: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
+  async function list(over: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
     const props = {
       onSelectProvider: jest.fn(),
       onSelectFolder: jest.fn(),
       onMoveToFolder: jest.fn(),
     }
-    renderWithProviders(
+    await renderWithProviders(
       <FeedFluxList
         fluxes={fluxes}
         templates={TEMPLATES}
@@ -415,36 +418,36 @@ describe("FeedFluxList — folder chips", () => {
     return props
   }
 
-  it("shows one chip per folder with its unread total, and selects it", () => {
-    const { onSelectFolder } = list()
+  it("shows one chip per folder with its unread total, and selects it", async () => {
+    const { onSelectFolder } = await list()
     expect(screen.getAllByText("3").length).toBeGreaterThan(0)
-    fireEvent.press(screen.getByText("AI"))
+    await fireEvent.press(screen.getByText("AI"))
     expect(onSelectFolder).toHaveBeenCalledWith("AI")
   })
 
-  it("deselects the folder when pressed again", () => {
-    const { onSelectFolder } = list({ selectedFolder: "AI" })
-    fireEvent.press(screen.getByText("AI"))
+  it("deselects the folder when pressed again", async () => {
+    const { onSelectFolder } = await list({ selectedFolder: "AI" })
+    await fireEvent.press(screen.getByText("AI"))
     expect(onSelectFolder).toHaveBeenCalledWith(null)
   })
 
-  it("lists only the flux of the selected folder, each movable", () => {
-    const { onMoveToFolder } = list({ selectedFolder: "AI" })
+  it("lists only the flux of the selected folder, each movable", async () => {
+    const { onMoveToFolder } = await list({ selectedFolder: "AI" })
     expect(screen.getByText("a")).toBeTruthy()
     expect(screen.getByText("b")).toBeTruthy()
     expect(screen.queryByText("c")).toBeNull()
 
-    fireEvent.press(screen.getAllByLabelText("Déplacer dans un dossier")[0])
+    await fireEvent.press(screen.getAllByLabelText("Déplacer dans un dossier")[0])
     expect(onMoveToFolder).toHaveBeenCalledWith(fluxes[0])
   })
 
-  it("shows no folder chip when nothing is in a folder", () => {
-    list({ fluxes: [fluxes[2]] })
+  it("shows no folder chip when nothing is in a folder", async () => {
+    await list({ fluxes: [fluxes[2]] })
     expect(screen.queryByText("AI")).toBeNull()
   })
 
-  it("works without folder handlers (defaults)", () => {
-    renderWithProviders(
+  it("works without folder handlers (defaults)", async () => {
+    await renderWithProviders(
       <FeedFluxList
         fluxes={fluxes}
         templates={TEMPLATES}
@@ -457,8 +460,8 @@ describe("FeedFluxList — folder chips", () => {
         onImported={jest.fn()}
       />,
     )
-    fireEvent.press(screen.getByText("AI"))
-    fireEvent.press(screen.getAllByLabelText("Déplacer dans un dossier")[0])
+    await fireEvent.press(screen.getByText("AI"))
+    await fireEvent.press(screen.getAllByLabelText("Déplacer dans un dossier")[0])
     expect(screen.getByText("a")).toBeTruthy()
   })
 })
@@ -474,12 +477,12 @@ describe("FeedDetailScreen — save button", () => {
       source: undefined,
     })
     useReadItemsStore.setState({ initialized: true, sync: { userId: "user-1", token: "jwt" } })
-    renderWithProviders(<FeedDetailScreen />)
+    await renderWithProviders(<FeedDetailScreen />)
 
-    fireEvent.press(screen.getByLabelText("Garder pour plus tard"))
+    await fireEvent.press(screen.getByLabelText("Garder pour plus tard"))
     await waitFor(() => expect(setItemSaved).toHaveBeenLastCalledWith("user-1", 1, true, "jwt"))
 
-    fireEvent.press(screen.getByLabelText("Retirer des enregistrés"))
+    await fireEvent.press(screen.getByLabelText("Retirer des enregistrés"))
     await waitFor(() => expect(setItemSaved).toHaveBeenLastCalledWith("user-1", 1, false, "jwt"))
   })
 })
@@ -534,7 +537,7 @@ describe("usePushNotifications", () => {
 describe("ProfileScreen — push switch", () => {
   async function profile(values: Record<string, string> = {}) {
     stubStorage(values)
-    renderWithProviders(<ProfileScreen />)
+    await renderWithProviders(<ProfileScreen />)
     await waitFor(() => expect(screen.getByText("Jean")).toBeTruthy())
     return screen.getByLabelText("Notifications push")
   }
@@ -546,10 +549,10 @@ describe("ProfileScreen — push switch", () => {
 
   it("turning it off unregisters the device and clears the badge", async () => {
     stubStorage({ push_token: "ExponentPushToken[abc]" })
-    renderWithProviders(<ProfileScreen />)
+    await renderWithProviders(<ProfileScreen />)
     await waitFor(() => expect(screen.getByText("Jean")).toBeTruthy())
 
-    fireEvent(screen.getByLabelText("Notifications push"), "valueChange", false)
+    await fireEvent(screen.getByLabelText("Notifications push"), "valueChange", false)
 
     await waitFor(() =>
       expect(unregisterPushToken).toHaveBeenCalledWith(
@@ -565,7 +568,7 @@ describe("ProfileScreen — push switch", () => {
   it("turning it on registers the device again", async () => {
     await profile({ push_enabled: "false" })
 
-    fireEvent(screen.getByLabelText("Notifications push"), "valueChange", true)
+    await fireEvent(screen.getByLabelText("Notifications push"), "valueChange", true)
 
     await waitFor(() => expect(registerPushToken).toHaveBeenCalled())
     expect(asyncStorage.setItem).toHaveBeenCalledWith("push_enabled", "true")
@@ -573,10 +576,10 @@ describe("ProfileScreen — push switch", () => {
 
   it("only stores the choice when nobody is signed in", async () => {
     secureStore.getItemAsync.mockResolvedValue(null)
-    renderWithProviders(<ProfileScreen />)
+    await renderWithProviders(<ProfileScreen />)
     await waitFor(() => expect(screen.getByText("?")).toBeTruthy())
 
-    fireEvent(screen.getByLabelText("Notifications push"), "valueChange", false)
+    await fireEvent(screen.getByLabelText("Notifications push"), "valueChange", false)
 
     await waitFor(() => expect(asyncStorage.setItem).toHaveBeenCalledWith("push_enabled", "false"))
     expect(unregisterPushToken).not.toHaveBeenCalled()
@@ -584,10 +587,10 @@ describe("ProfileScreen — push switch", () => {
 
   it("signing out unregisters the device and clears the badge first", async () => {
     stubStorage({ push_token: "ExponentPushToken[abc]" })
-    renderWithProviders(<ProfileScreen />)
+    await renderWithProviders(<ProfileScreen />)
     await waitFor(() => expect(screen.getByText("Jean")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Déconnexion"))
+    await fireEvent.press(screen.getByText("Déconnexion"))
 
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login"))
     expect(unregisterPushToken).toHaveBeenCalled()
@@ -596,10 +599,10 @@ describe("ProfileScreen — push switch", () => {
 
   it("signing out without a session still goes back to the login", async () => {
     secureStore.getItemAsync.mockResolvedValue(null)
-    renderWithProviders(<ProfileScreen />)
+    await renderWithProviders(<ProfileScreen />)
     await waitFor(() => expect(screen.getByText("?")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Déconnexion"))
+    await fireEvent.press(screen.getByText("Déconnexion"))
 
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login"))
     expect(unregisterPushToken).not.toHaveBeenCalled()

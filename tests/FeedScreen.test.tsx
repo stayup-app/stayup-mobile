@@ -101,19 +101,19 @@ beforeEach(() => {
 describe("FeedScreen — chargement", () => {
   it("shows the loading screen before the first response", async () => {
     mockedGetUserFeed.mockReturnValue(new Promise(() => {}))
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(screen.getByText("Chargement…")).toBeTruthy())
   })
 
   it("shows the error and allows retrying", async () => {
     mockedGetUserFeed.mockRejectedValue(new Error("StayUp API error 500"))
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(screen.getByText("Erreur de chargement.")).toBeTruthy())
 
     mockedGetUserFeed.mockResolvedValue(feedResponse())
-    fireEvent.press(screen.getByText("Réessayer"))
+    await fireEvent.press(screen.getByText("Réessayer"))
 
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
   })
@@ -121,7 +121,7 @@ describe("FeedScreen — chargement", () => {
 
 describe("FeedScreen — affichage", () => {
   it("lists the feed items and the flux section", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
     expect(screen.getByText("Article B")).toBeTruthy()
@@ -129,7 +129,7 @@ describe("FeedScreen — affichage", () => {
   })
 
   it("shows the total count and the unread count", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(screen.getByText("Tous")).toBeTruthy())
     // 2 items au total, 2 non lus.
@@ -138,7 +138,7 @@ describe("FeedScreen — affichage", () => {
 
   it("hides the unread badge and the mark-all button once everything is read", async () => {
     withReadItems("rss:1", "rss:2")
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
     expect(screen.queryByTestId("icon-CheckCheck")).toBeNull()
@@ -148,10 +148,10 @@ describe("FeedScreen — affichage", () => {
 describe("FeedScreen — filtres", () => {
   it("keeps only unread items in unread mode", async () => {
     withReadItems("rss:1")
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Non lu"))
+    await fireEvent.press(screen.getByText("Non lu"))
 
     await waitFor(() => expect(screen.queryByText("Article A")).toBeNull())
     expect(screen.getByText("Article B")).toBeTruthy()
@@ -163,10 +163,10 @@ describe("FeedScreen — filtres", () => {
       item: { provider: "rss", item: { ...rssItem(1, "Article A") } },
       repoUrl: "",
     })
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Non lu"))
+    await fireEvent.press(screen.getByText("Non lu"))
 
     await waitFor(() => expect(screen.getByText("Article B")).toBeTruthy())
     expect(screen.getByText("Article A")).toBeTruthy()
@@ -174,21 +174,21 @@ describe("FeedScreen — filtres", () => {
 
   it("switches back to the all filter", async () => {
     withReadItems("rss:1")
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Non lu"))
+    await fireEvent.press(screen.getByText("Non lu"))
     await waitFor(() => expect(screen.queryByText("Article A")).toBeNull())
 
-    fireEvent.press(screen.getByText("Tous"))
+    await fireEvent.press(screen.getByText("Tous"))
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
   })
 
   it("restricts the feed to the selected provider", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("RSS")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("RSS"))
+    await fireEvent.press(screen.getByText("RSS"))
 
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
   })
@@ -196,10 +196,10 @@ describe("FeedScreen — filtres", () => {
 
 describe("FeedScreen — lecture", () => {
   it("marks everything as read", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByTestId("icon-CheckCheck")).toBeTruthy())
 
-    fireEvent.press(screen.getByTestId("icon-CheckCheck"))
+    await fireEvent.press(screen.getByTestId("icon-CheckCheck"))
 
     await waitFor(() =>
       expect(asyncStorage.setItem).toHaveBeenCalledWith(
@@ -210,10 +210,10 @@ describe("FeedScreen — lecture", () => {
   })
 
   it("opens an item and stores it with its repository url", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Article A"))
+    await fireEvent.press(screen.getByText("Article A"))
 
     await waitFor(() => expect(mockRouter.push).toHaveBeenCalledWith("/feed/detail"))
     expect(useSelectedFeedItemStore.getState().repoUrl).toBe("https://blog.example.com/feed.xml")
@@ -221,7 +221,7 @@ describe("FeedScreen — lecture", () => {
 
   it("drops stored ids that are no longer in the feed", async () => {
     withReadItems("rss:1", "rss:999")
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() =>
       expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["rss:1"])),
@@ -232,7 +232,7 @@ describe("FeedScreen — lecture", () => {
 describe("FeedScreen — session", () => {
   it("signs the user out when the API rejects the token", async () => {
     mockedGetUserFeed.mockRejectedValue(new ApiError(401, "Unauthorized"))
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(secureStore.deleteItemAsync).toHaveBeenCalledWith("auth_token"))
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login"))
@@ -245,14 +245,14 @@ describe("FeedScreen — connecteurs partiels", () => {
       repositories,
       connectors: { rss: [rssItem(1, "Article A")] },
     })
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
   })
 
   it("tolerates a response with no connector at all", async () => {
     mockedGetUserFeed.mockResolvedValue({ repositories, connectors: {} })
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
 
     await waitFor(() => expect(screen.getByText("Aucun contenu disponible.")).toBeTruthy())
   })
@@ -297,10 +297,10 @@ describe("FeedScreen — filtre non lu par provider", () => {
       },
     })
     withReadItems("changelog:1", "youtube:1", "scrap:1")
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("v9.9.9")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Non lu"))
+    await fireEvent.press(screen.getByText("Non lu"))
 
     await waitFor(() => expect(screen.queryByText("v9.9.9")).toBeNull())
     expect(screen.queryByText("Ma vidéo")).toBeNull()
@@ -311,22 +311,22 @@ describe("FeedScreen — filtre non lu par provider", () => {
 
 describe("FeedScreen — ajout de flux", () => {
   it("opens the add sheet", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByTestId("icon-Plus")).toBeTruthy())
 
-    fireEvent.press(screen.getByTestId("icon-Plus"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByTestId("icon-Plus"), { stopPropagation: jest.fn() })
 
     await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
   })
 
   it("closes the add sheet again", async () => {
-    renderWithProviders(<FeedScreen />)
+    await renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByTestId("icon-Plus")).toBeTruthy())
 
-    fireEvent.press(screen.getByTestId("icon-Plus"), { stopPropagation: jest.fn() })
+    await fireEvent.press(screen.getByTestId("icon-Plus"), { stopPropagation: jest.fn() })
     await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("Annuler"))
+    await fireEvent.press(screen.getByText("Annuler"))
 
     await waitFor(() => expect(screen.queryByText("Ajouter un flux")).toBeNull())
   })

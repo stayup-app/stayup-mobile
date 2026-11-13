@@ -18,8 +18,8 @@ function Probe() {
   )
 }
 
-function renderProbe(initialLang?: "en" | "fr" | "de" | "es" | "it" | "pt" | "ja" | "zh") {
-  return render(
+async function renderProbe(initialLang?: "en" | "fr" | "de" | "es" | "it" | "pt" | "ja" | "zh") {
+  return await render(
     <LanguageProvider initialLang={initialLang}>
       <Probe />
     </LanguageProvider>,
@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe("LanguageProvider", () => {
   it("defaults to English when nothing is stored", async () => {
-    renderProbe()
+    await renderProbe()
 
     await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("en"))
     expect(screen.getByTestId("label")).toHaveTextContent("Sign in")
@@ -40,24 +40,24 @@ describe("LanguageProvider", () => {
 
   it("restores the stored language", async () => {
     asyncStorage.getItem.mockResolvedValue("de")
-    renderProbe()
+    await renderProbe()
 
     await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("de"))
     expect(screen.getByTestId("label")).toHaveTextContent("Anmelden")
   })
 
   it("accepts an explicit initial language", async () => {
-    renderProbe("fr")
+    await renderProbe("fr")
 
     await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("fr"))
     expect(screen.getByTestId("label")).toHaveTextContent("Se connecter")
   })
 
   it("switches language and persists the choice", async () => {
-    renderProbe()
+    await renderProbe()
     await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("en"))
 
-    fireEvent.press(screen.getByTestId("to-fr"))
+    await fireEvent.press(screen.getByTestId("to-fr"))
 
     await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("fr"))
     expect(screen.getByTestId("label")).toHaveTextContent("Se connecter")
@@ -66,9 +66,11 @@ describe("LanguageProvider", () => {
 })
 
 describe("useLanguage", () => {
-  it("throws when used outside of a provider", () => {
+  it("throws when used outside of a provider", async () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {})
-    expect(() => render(<Probe />)).toThrow("useLanguage must be used within LanguageProvider")
+    await expect(render(<Probe />)).rejects.toThrow(
+      "useLanguage must be used within LanguageProvider",
+    )
     spy.mockRestore()
   })
 })
