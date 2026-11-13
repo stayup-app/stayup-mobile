@@ -2,7 +2,7 @@
   "expo": {
     "name": "StayUp",
     "slug": "stayup-mobile",
-    "version": "1.17.1",
+    "version": "1.17.2",
     "scheme": "stayup",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
